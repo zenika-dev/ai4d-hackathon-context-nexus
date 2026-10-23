@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // context-assemble · simule le Context Assembler du Context Nexus pour le dry run du 26/10.
-// Prototype de référence, sans dépendance (Node 20+). À aligner avec la version outillée par Nicolas.
+// Sans dépendance (Node 20+). Utilisé par les starters (npm run context, gate-check) et les devcontainers.
 //
 //   node tools/context-assemble.mjs --squad squad-1-offre                 # brief + dépendances
 //   node tools/context-assemble.mjs --squad squad-1-offre --out ../starter/.context/brief.md

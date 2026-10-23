@@ -7,7 +7,7 @@ status: active
 version: 1.0.0
 last-validated: 2026-10-26
 consumption-mode: skill
-consumes: [programme/late-checkout/operations/feature-flags.md@1.0.0, programme/late-checkout/operations/deploiement.md@1.0.0]
+consumes: [programme/late-checkout/operations/feature-flags.md@1.0.0, programme/late-checkout/operations/deploiement.md@1.1.0]
 ---
 
 # Runtime Spec · <volet> · G4 Released and Observable
