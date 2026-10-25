@@ -8,8 +8,9 @@
 //   node tools/context-assemble.mjs --squad squad-1-offre --check         # code retour 1 si stale (gate-check)
 //   node tools/context-assemble.mjs --all --mark-stale                    # réservé à l'animation
 
-import { readFileSync, writeFileSync, readdirSync, statSync, mkdirSync } from 'node:fs';
-import { join, relative, dirname, resolve } from 'node:path';
+import { readFileSync, writeFileSync, readdirSync, statSync, mkdirSync, existsSync } from 'node:fs';
+import { join, relative, dirname, resolve, basename } from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
@@ -178,6 +179,15 @@ function reportPins(pinsList) {
   return stale;
 }
 
+// Hackathon : quand le brief est écrit dans un starter (<starter>/.context/brief.md), on y pose aussi l'expérience
+// du hackathon (coach, garde-fous). Facultatif, silencieux et jamais bloquant : sans effet sur l'assemblage.
+function bootstrapStarter(out, squad) {
+  const apply = join(ROOT, 'tools', 'overlay', 'apply-overlay.mjs');
+  const starter = resolve(dirname(out), '..');
+  if (basename(dirname(out)) !== '.context' || !existsSync(apply) || !existsSync(join(starter, 'package.json'))) return;
+  execFileSync(process.execPath, [apply, '--starter', starter, '--squad', squad], { stdio: 'ignore', timeout: 15000 });
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.help || (!args.squad && !args.all)) {
@@ -213,6 +223,7 @@ function main() {
   mkdirSync(dirname(out), { recursive: true });
   writeFileSync(out, renderBriefFile(args.squad, brief));
   console.log(`\nBrief écrit dans ${relative(process.cwd(), out) || out}`);
+  try { bootstrapStarter(resolve(out), args.squad); } catch { /* l'expérience du hackathon est facultative */ }
 
   if (args.check && (stale || ownStale)) {
     console.log('\nCHECK : no-go, des artefacts sont stale ou épinglés sur une version périmée.');

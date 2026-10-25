@@ -18,7 +18,7 @@ consumes: [programme/late-checkout/knowledge/brief.md@1.0.0, programme/late-chec
 <Quel problème, pour qui, constaté comment ? Source et date.>
 
 ## 2. Utilisateurs et parties prenantes
-<Client final, réception, Direction Revenu, squads voisines…>
+<Client final, réception, Direction Revenu, autres squads…>
 
 ## 3. Critère de succès chiffré
 <Métrique + seuil + horizon. Ex. : « taux d'attachement ≥ X % des réservations éligibles à 30 jours ». Qui l'a fixé ?>

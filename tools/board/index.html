@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Écran commun · Hackathon Champions</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#020032; --surface:#0B0B48; --surface2:#14145A; --line:#2B2B6B;
+  --ink:#E1EBEB; --muted:#B2B2C8; --teal:#5EBBC6; --teal-t:#0A3550; --teal-b:#14586B;
+  --sand:#D6A978; --sand-t:#2D2216; --bordeaux:#7A1042; --rose:#FF9DB8; --ok:#5EBBC6;
+  --font:'Montserrat',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.4;padding:18px 24px 32px}
+body.off::before{content:"Connexion à l'écran perdue : nouvel essai toutes les 3 secondes";position:fixed;top:0;left:0;right:0;background:var(--bordeaux);color:var(--ink);text-align:center;padding:6px;font-size:14px;z-index:50}
+h1,h2,h3,p{margin:0}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--sand)}
+.top{display:grid;grid-template-columns:1fr auto 1fr;gap:20px;align-items:center;margin-bottom:14px}
+.top h1{font-size:clamp(20px,2.2vw,30px);font-weight:700}
+.clock{font-size:clamp(36px,5vw,64px);font-weight:700;letter-spacing:.02em;text-align:center;font-variant-numeric:tabular-nums;line-height:1}
+.clock small{display:block;font-size:14px;font-weight:600;color:var(--muted);letter-spacing:.08em;margin-top:4px}
+.right{text-align:right}
+.pill{display:inline-block;font-size:14px;font-weight:700;padding:4px 14px;border-radius:999px;background:var(--teal);color:var(--bg)}
+.bar{height:6px;background:var(--surface2);border-radius:3px;margin-top:8px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--teal)}
+.banner{display:none;border-radius:14px;padding:12px 18px;margin:0 0 14px;font-weight:600;font-size:18px}
+.banner.open{display:block;background:var(--bordeaux);border:2px solid var(--rose)}
+.banner.done{display:block;background:var(--teal-t);border:2px solid var(--teal)}
+.banner b{font-variant-numeric:tabular-nums}
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.sq{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.sqh{display:flex;gap:10px;align-items:center}
+.num{flex:none;width:34px;height:34px;border-radius:50%;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-weight:700}
+.sqh h3{font-size:20px}
+.sqh p{font-size:12px;color:var(--muted);line-height:1.25}
+.blk{align-self:flex-start;font-size:13px;font-weight:700;padding:3px 12px;border-radius:999px;background:var(--surface2);border:1px solid var(--line)}
+.gates{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.g{font:inherit;color:inherit;border:1.5px solid var(--line);background:transparent;border-radius:10px;padding:6px 2px;font-weight:700;font-size:15px;display:flex;flex-direction:column;align-items:center;gap:1px;cursor:default}
+.g small{font-weight:500;font-size:11px;color:var(--muted)}
+.g.go{background:var(--teal);border-color:var(--teal);color:var(--bg)} .g.go small{color:var(--bg)}
+.g.nogo{background:var(--bordeaux);border-color:var(--rose)}
+.g.due{border-color:var(--sand);background:var(--sand-t);color:var(--sand);animation:pulse 1.6s ease-in-out infinite}
+.g.soon{border-color:var(--sand);color:var(--sand)}
+.g.todo{color:var(--muted)}
+body.keeper .g{cursor:pointer}
+body.keeper .g:hover{border-color:var(--ink)}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion:reduce){.g.due{animation:none}}
+.nxt{font-size:14px;color:var(--muted)} .nxt b{color:var(--ink);font-variant-numeric:tabular-nums}
+.meta{font-size:12px;color:var(--muted)}
+.mid{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:12px;margin-bottom:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;min-width:0}
+.card h2{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--sand);font-weight:700;margin-bottom:10px}
+.leg{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:8px}
+.leg i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px;border:1.5px solid}
+.side{display:flex;flex-direction:column;gap:12px}
+.ms{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--line);font-size:14px}
+.ms:first-of-type{border-top:0}
+.ms .ic{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700;border:1.5px solid var(--line)}
+.ms.done .ic{background:var(--teal);border-color:var(--teal);color:var(--bg)}
+.ms.late .ic{background:var(--bordeaux);border-color:var(--rose)}
+.ms small{display:block;color:var(--muted);font-size:12px}
+.inc{padding:8px 0;border-top:1px solid var(--line);font-size:14px}
+.inc:first-of-type{border-top:0}
+.inc b{font-variant-numeric:tabular-nums}
+.inc small{display:block;color:var(--muted);font-size:12px}
+.feed{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 24px;font-size:13px}
+.feed li{display:flex;gap:10px;padding:4px 0;border-top:1px solid var(--line);min-width:0}
+.feed time{flex:none;color:var(--muted);font-variant-numeric:tabular-nums}
+.feed span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kbar{display:none;margin:0 0 14px;padding:10px 14px;border:2px dashed var(--sand);border-radius:12px;align-items:center;gap:14px;flex-wrap:wrap}
+body.keeper .kbar{display:flex}
+button.act{font:inherit;font-weight:700;border:0;border-radius:10px;padding:10px 18px;background:var(--sand);color:var(--bg);cursor:pointer}
+button.act.sec{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+dialog{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:16px;padding:20px 22px;max-width:560px;width:calc(100% - 32px)}
+dialog::backdrop{background:rgba(2,0,50,.8)}
+dialog h3{font-size:20px;margin-bottom:4px}
+dialog ul{list-style:none;padding:0;margin:6px 0 12px;font-size:14px}
+dialog li{padding:2px 0}
+dialog .sub{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--sand);font-weight:700;margin-top:10px}
+dialog label{display:block;font-size:14px;margin:8px 0 4px}
+dialog input[type=text],dialog textarea{width:100%;font:inherit;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.verd{display:flex;gap:10px;margin:10px 0}
+.verd label{flex:1;margin:0;border:1.5px solid var(--line);border-radius:10px;padding:10px;text-align:center;font-weight:700;cursor:pointer}
+.verd input{margin-right:8px}
+.verd label:has(input:checked){border-color:var(--teal);background:var(--teal-t)}
+.verd label.nogo:has(input:checked){border-color:var(--rose);background:var(--bordeaux)}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:10px;font-weight:600;display:none;z-index:60}
+@media (max-width:1100px){.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}.mid{grid-template-columns:1fr}.feed{grid-template-columns:1fr}.top{grid-template-columns:1fr}.right{text-align:left}}
+</style>
+</head>
+<body>
+<div class="top">
+  <div><p class="eyebrow">Hackathon Champions · 4 h</p><h1>Late check-out chez Vélora</h1></div>
+  <div class="clock"><span id="clock">--:--:--</span><small id="tplus"></small></div>
+  <div class="right"><span class="pill" id="block">…</span><div class="bar"><i id="prog" style="width:0"></i></div></div>
+</div>
+
+<div class="banner" id="banner"></div>
+
+<div class="kbar" id="kbar"></div>
+
+<section class="grid4" id="squads" aria-label="Avancement des squads"></section>
+
+<section class="mid">
+  <div class="card">
+    <h2>Context Nexus · les contrats et leurs versions</h2>
+    <div id="graph"></div>
+    <div class="leg">
+      <span><i style="border-color:var(--teal);background:var(--surface2)"></i>à jour</span>
+      <span><i style="border-color:var(--sand);background:var(--sand-t)"></i>stale : à relire</span>
+      <span><i style="border-color:var(--rose);background:var(--bordeaux)"></i>vient de changer</span>
+      <span><i style="border-color:var(--teal);border-style:dashed;background:var(--surface2)"></i>nouvelle version attendue</span>
+    </div>
+  </div>
+  <div class="side">
+    <div class="card"><h2>Jalons communs</h2><div id="ms"></div></div>
+    <div class="card"><h2>Changements de contrat</h2><div id="inc"></div></div>
+  </div>
+</section>
+
+<section class="card"><h2>Publications dans le Nexus</h2><ul class="feed" id="feed"></ul></section>
+
+<dialog id="dlg"><form method="dialog" id="dform"></form></dialog>
+<div class="toast" id="toast"></div>
+
+<script>
+var S = null, offset = 0;
+var $ = function (id) { return document.getElementById(id); };
+function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+function p2(n) { return String(n).padStart(2, '0'); }
+function dur(sec) { sec = Math.max(0, Math.round(sec)); var h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60; return (h ? h + ':' + p2(m) : m) + ':' + p2(s); }
+function parts(d) { var o = {}; new Intl.DateTimeFormat('en-GB', { timeZone: (S && S.tz) || 'Europe/Paris', hourCycle: 'h23', hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(d).forEach(function (x) { o[x.type] = x.value; }); return o; }
+function hhmm(iso) { var o = parts(new Date(iso)); return o.hour + ':' + o.minute; }
+function ago(iso) { if (!iso) return 'aucune activité'; var s = (Date.now() + offset - new Date(iso).getTime()) / 1000; if (s < 60) return 'à l\'instant'; if (s < 3600) return 'il y a ' + Math.round(s / 60) + ' min'; return 'il y a ' + Math.round(s / 3600) + ' h'; }
+function nowMs() { return Date.now() + offset; }
+
+async function poll() {
+  try {
+    var r = await fetch('/api/state', { cache: 'no-store' });
+    S = await r.json();
+    if (S.error) throw new Error(S.error);
+    offset = S.serverMs - Date.now();
+    document.body.classList.remove('off');
+    document.body.classList.toggle('keeper', !!S.keeper);
+    render();
+  } catch (e) { document.body.classList.add('off'); }
+}
+
+function render() { renderSquads(); renderGraph(); renderSide(); renderFeed(); renderKeeperBar(); renderBanner(); tick(); }
+
+function renderSquads() {
+  $('squads').innerHTML = S.squads.map(function (q) {
+    var gates = Object.keys(q.gates).map(function (g) {
+      var x = q.gates[g], mark = x.state === 'go' ? '✓ ' : (x.state === 'nogo' ? '✕ ' : '');
+      var tip = x.verdict ? x.verdict.verdict + ' · ' + x.verdict.keeper + (x.verdict.note ? ' · ' + x.verdict.note : '') : 'Gate keeper ' + x.keeper;
+      return '<button type="button" class="g ' + x.state + '" data-squad="' + esc(q.id) + '" data-gate="' + g + '" title="' + esc(tip) + '">' + mark + g + '<small>' + esc(x.slot) + '</small></button>';
+    }).join('');
+    var nxt = q.nextGate ? 'Prochaine gate ' + q.nextGate + (q.nextSlotSec > 0 ? ' dans <b data-cd="' + q.nextSlotSec + '" data-t0="' + Date.now() + '">' + dur(q.nextSlotSec) + '</b>' : ' : <b>créneau atteint</b>') : 'Les quatre gates sont passées';
+    var c = q.counts;
+    return '<article class="sq"><div class="sqh"><span class="num">' + q.number + '</span><div><h3>' + esc(q.label) + '</h3><p>' + esc(q.volet) + '</p></div></div>'
+      + '<span class="blk">' + esc(q.block || 'Hors session') + '</span><div class="gates">' + gates + '</div><p class="nxt">' + nxt + '</p>'
+      + '<p class="meta">' + c.active + ' artefact(s) actif(s)' + (c.stale ? ' · <span style="color:var(--sand)">' + c.stale + ' à réaligner</span>' : '') + ' · ' + ago(q.lastActivity) + '</p></article>';
+  }).join('');
+  Array.prototype.forEach.call(document.querySelectorAll('.g'), function (b) { b.addEventListener('click', function () { if (S.keeper) openGate(b.dataset.squad, b.dataset.gate); }); });
+}
+
+function renderGraph() {
+  var N = S.graph.nodes, E = S.graph.edges;
+  if (!N.length) { $('graph').innerHTML = '<p class="meta">Aucun contrat publié.</p>'; return; }
+  var W = 176, H = 62, GX = 84, GY = 18, PAD = 8;
+  var cols = {};
+  N.forEach(function (n) { (cols[n.depth] = cols[n.depth] || []).push(n); });
+  var maxD = Math.max.apply(null, N.map(function (n) { return n.depth; }));
+  var order = {}; S.squads.forEach(function (q) { order[q.id] = q.number; });
+  var maxRows = 0, pos = {};
+  Object.keys(cols).forEach(function (d) {
+    cols[d].sort(function (a, b) { return (order[a.squad] || 9) - (order[b.squad] || 9) || a.label.localeCompare(b.label); });
+    maxRows = Math.max(maxRows, cols[d].length);
+    cols[d].forEach(function (n, i) { pos[n.id] = { x: PAD + d * (W + GX), y: PAD + i * (H + GY) }; });
+  });
+  var vw = PAD * 2 + (maxD + 1) * W + maxD * GX, vh = PAD * 2 + maxRows * H + (maxRows - 1) * GY;
+  var byId = {}; N.forEach(function (n) { byId[n.id] = n; });
+  var svg = '<svg viewBox="0 0 ' + vw + ' ' + vh + '" width="100%" role="img" aria-label="Graphe des contrats du Context Nexus">'
+    + '<defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>';
+  E.forEach(function (e) {
+    var a = pos[e.from], b = pos[e.to]; if (!a || !b) return;
+    var x1 = a.x + W, y1 = a.y + H / 2, x2 = b.x, y2 = b.y + H / 2, dx = Math.max(24, (x2 - x1) / 2);
+    var hot = byId[e.from].incident && byId[e.to].stale;
+    svg += '<path d="M' + x1 + ' ' + y1 + ' C' + (x1 + dx) + ' ' + y1 + ',' + (x2 - dx) + ' ' + y2 + ',' + x2 + ' ' + y2 + '" fill="none" stroke="' + (hot ? '#FF9DB8' : '#6C6CA0') + '" stroke-width="' + (hot ? 2.4 : 1.4) + '" marker-end="url(#ar)"/>';
+  });
+  N.forEach(function (n) {
+    var p = pos[n.id], fill = '#14145A', stroke = '#5EBBC6', dash = '', tx = '#E1EBEB', sub = '#B2B2C8';
+    if (n.incident) { fill = '#7A1042'; stroke = '#FF9DB8'; }
+    else if (n.stale) { fill = '#2D2216'; stroke = '#D6A978'; tx = '#D6A978'; }
+    else if (n.expected) { dash = ' stroke-dasharray="5 4"'; }
+    var note = n.stale ? n.issues.filter(function (i) { return i.kind !== 'INTROUVABLE'; }).map(function (i) { return i.path.split('/').pop().replace('.md', '') + ' ' + i.pinned + '→' + i.current; })[0] || 'stale' : (n.incident ? 'vient de changer' : n.squadLabel);
+    svg += '<g><rect x="' + p.x + '" y="' + p.y + '" width="' + W + '" height="' + H + '" rx="10" fill="' + fill + '" stroke="' + stroke + '" stroke-width="2"' + dash + '/>'
+      + '<text x="' + (p.x + 12) + '" y="' + (p.y + 22) + '" fill="' + tx + '" font-size="15" font-weight="700" font-family="Montserrat,system-ui,sans-serif">' + esc(n.label) + '</text>'
+      + '<text x="' + (p.x + 12) + '" y="' + (p.y + 40) + '" fill="' + tx + '" font-size="13" font-family="Montserrat,system-ui,sans-serif">v' + esc(n.version) + ' · ' + esc(n.status) + '</text>'
+      + '<text x="' + (p.x + 12) + '" y="' + (p.y + 55) + '" fill="' + sub + '" font-size="11" font-family="Montserrat,system-ui,sans-serif">' + esc(note.length > 30 ? note.slice(0, 29) + '…' : note) + '</text></g>';
+  });
+  $('graph').innerHTML = svg + '</svg>';
+}
+
+function renderSide() {
+  $('ms').innerHTML = S.milestones.length ? S.milestones.map(function (m) {
+    var cls = m.done ? 'done' : (m.late ? 'late' : '');
+    return '<div class="ms ' + cls + '"><span class="ic">' + (m.done ? '✓' : (m.late ? '!' : '')) + '</span><div><b>' + esc(m.id) + ' · ' + esc(m.label) + '</b><small>avant ' + esc(m.due) + (m.done ? ' · publié (v' + esc(m.current) + ')' : ' · ' + esc(m.why)) + '</small></div></div>';
+  }).join('') : '<p class="meta">Aucun jalon.</p>';
+  var inc = S.incidents.slice().reverse().slice(0, 3);
+  $('inc').innerHTML = inc.length ? inc.map(function (i) {
+    var open = !i.resolvedAt, t = open ? (nowMs() - new Date(i.startAt).getTime()) / 1000 : (new Date(i.resolvedAt) - new Date(i.startAt)) / 1000;
+    return '<div class="inc"><b>' + esc(i.label) + ' ' + esc(i.from) + ' → ' + esc(i.to) + '</b><small>' + (open ? (i.total - i.pending.length) + ' sur ' + i.total + ' consommateur(s) réaligné(s) · en cours depuis <b data-inc="' + esc(i.startAt) + '">' + dur(t) + '</b>' : 'réaligné en ' + dur(t) + ' (' + i.total + ' consommateur(s))') + '</small>'
+      + (open && i.pending.length ? '<small>À réaligner : ' + i.pending.map(function (p) { return esc(p.split('/')[1]); }).filter(function (v, k, a) { return a.indexOf(v) === k; }).join(', ') + '</small>' : '') + '</div>';
+  }).join('') : '<p class="meta">Aucun contrat publié n\'a encore changé. L\'événement du Develop arrive.</p>';
+}
+
+function renderFeed() {
+  $('feed').innerHTML = S.feed.slice(0, 12).map(function (f) { return '<li><time>' + hhmm(f.at) + '</time><span>' + esc(f.msg) + '</span></li>'; }).join('') || '<li><span class="meta">Rien publié pour l\'instant.</span></li>';
+}
+
+function renderBanner() {
+  var open = S.incidents.filter(function (i) { return !i.resolvedAt; })[0];
+  var b = $('banner');
+  if (open) { b.className = 'banner open'; b.innerHTML = '⚡ Un contrat partagé a changé : <b>' + esc(open.label) + ' ' + esc(open.from) + ' → ' + esc(open.to) + '</b> · ' + open.pending.length + ' artefact(s) à réaligner · <b data-inc="' + esc(open.startAt) + '">' + dur((nowMs() - new Date(open.startAt)) / 1000) + '</b>'; return; }
+  var recent = S.incidents.filter(function (i) { return i.resolvedAt && nowMs() - new Date(i.resolvedAt) < 300000; });
+  if (recent.length) {
+    var t0 = Math.min.apply(null, recent.map(function (i) { return new Date(i.startAt).getTime(); })), t1 = Math.max.apply(null, recent.map(function (i) { return new Date(i.resolvedAt).getTime(); }));
+    b.className = 'banner done';
+    b.innerHTML = '✓ Tout est réaligné : ' + recent.map(function (i) { return esc(i.label) + ' ' + esc(i.to); }).join(', ') + ' · en <b>' + dur((t1 - t0) / 1000) + '</b>';
+    return;
+  }
+  b.className = 'banner';
+}
+
+function renderKeeperBar() {
+  var k = $('kbar');
+  if (!S.keeper) { k.innerHTML = ''; return; }
+  k.innerHTML = '<span class="eyebrow">Poste des gate keepers</span><span class="meta">Cliquez sur une gate pour enregistrer un verdict.</span>'
+    + S.events.map(function (e) { return e.applied ? '<span class="meta">✓ Événement déclenché : ' + esc(e.title) + '</span>' : '<button class="act" type="button" data-ev="' + esc(e.id) + '">⚡ Déclencher : ' + esc(e.title) + '</button>'; }).join('');
+  Array.prototype.forEach.call(k.querySelectorAll('[data-ev]'), function (b) {
+    b.addEventListener('click', function () {
+      var ev = S.events.filter(function (e) { return e.id === b.dataset.ev; })[0];
+      $('dform').innerHTML = '<h3>Déclencher l\'événement ?</h3><p class="sub">À lire à voix haute, sans la commenter</p><p style="font-size:16px;margin:8px 0 12px">' + esc(ev.say || ev.announce) + '</p>'
+        + '<p class="sub">Pour l\'animation (à ne pas lire)</p><p class="meta">' + esc(ev.announce) + ' Le contrat sera modifié et publié dans le Context Nexus.</p>'
+        + '<div style="display:flex;gap:10px;margin-top:14px"><button class="act" type="button" id="evok">Déclencher</button><button class="act sec" type="button" id="evcancel">Annuler</button></div>';
+      $('dlg').showModal();
+      $('evcancel').onclick = function () { $('dlg').close(); };
+      $('evok').onclick = function () { $('dlg').close(); post('/api/event', { id: ev.id }); };
+    });
+  });
+}
+
+function tick() {
+  if (!S) return;
+  var n = nowMs(), d = new Date(n);
+  var o = parts(d); $('clock').textContent = o.hour + ':' + o.minute + ':' + o.second;
+  var el = (n - S.start) / 60000;
+  $('tplus').textContent = el < 0 ? 'début dans ' + dur(-el * 60) : (el > (S.end - S.start) / 60000 ? 'session terminée' : 'T+' + Math.floor(el / 60) + ':' + p2(Math.floor(el % 60)));
+  $('block').textContent = S.block ? S.block.id + ' · ' + S.block.from + '-' + S.block.to : 'Hors session';
+  $('prog').style.width = Math.min(100, Math.max(0, (n - S.start) / (S.end - S.start) * 100)) + '%';
+  Array.prototype.forEach.call(document.querySelectorAll('[data-cd]'), function (e) { e.textContent = dur(Number(e.dataset.cd) - (Date.now() - Number(e.dataset.t0)) / 1000); });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-inc]'), function (e) { e.textContent = dur((n - new Date(e.dataset.inc)) / 1000); });
+}
+
+function toast(msg) { var t = $('toast'); t.textContent = msg; t.style.display = 'block'; setTimeout(function () { t.style.display = 'none'; }, 4500); }
+
+async function post(url, body) {
+  try {
+    var r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', 'x-board': '1' }, body: JSON.stringify(body) });
+    var j = await r.json();
+    toast(j.ok ? (/^✓/.test(j.message) ? '' : '✓ ') + j.message : '✕ ' + (j.error || 'Erreur'));
+    poll();
+  } catch (e) { toast('✕ ' + e.message); }
+}
+
+function openGate(squadId, g) {
+  var q = S.squads.filter(function (s) { return s.id === squadId; })[0], x = q.gates[g];
+  var auto = x.auto.map(function (c) {
+    return '<li>' + (c.unknown ? '<span style="color:var(--muted)">·</span> ' : (c.ok ? '<span style="color:var(--teal)">✓</span> ' : '<span style="color:var(--rose)">✕</span> ')) + esc(c.id) + ' ' + esc(c.label) + (c.unknown ? ' <small style="color:var(--muted)">(à voir sur le poste de la squad : npm run gate-check -- ' + g + ')</small>' : '') + '</li>';
+  }).join('');
+  var human = x.human.map(function (h) { return '<li>• ' + esc(h) + '</li>'; }).join('');
+  var name = ''; try { name = localStorage.getItem('keeper') || ''; } catch (e) {}
+  $('dform').innerHTML = '<h3>' + g + ' · ' + esc(x.name) + '</h3><p class="meta">' + esc(q.label) + ' · créneau ' + esc(x.slot) + ' · gate keeper ' + esc(x.keeper) + '</p>'
+    + '<p class="sub">Contrôles automatiques vus depuis le Nexus</p><ul>' + auto + '</ul>'
+    + '<p class="sub">À juger par le gate keeper</p><ul>' + human + '</ul>'
+    + '<div class="verd"><label><input type="radio" name="v" value="GO" checked>GO</label><label class="nogo"><input type="radio" name="v" value="NO-GO">NO-GO</label></div>'
+    + '<label for="kn">Gate keeper</label><input type="text" id="kn" value="' + esc(name) + '" placeholder="prénom nom" required>'
+    + '<label for="kt">Motif (le critère qui manque, en cas de NO-GO)</label><textarea id="kt" rows="2"></textarea>'
+    + '<div style="display:flex;gap:10px;margin-top:14px"><button class="act" type="button" id="ok">Enregistrer</button><button class="act sec" type="button" id="cancel">Annuler</button></div>';
+  $('dlg').showModal();
+  $('cancel').onclick = function () { $('dlg').close(); };
+  $('ok').onclick = function () {
+    var who = $('kn').value.trim();
+    if (!who) { $('kn').focus(); return; }
+    try { localStorage.setItem('keeper', who); } catch (e) {}
+    var v = document.querySelector('input[name=v]:checked').value;
+    $('dlg').close();
+    post('/api/gate', { squad: squadId, gate: g, verdict: v, keeper: who, note: $('kt').value });
+  };
+}
+
+poll(); setInterval(poll, 3000); setInterval(tick, 1000);
+</script>
+</body>
+</html>

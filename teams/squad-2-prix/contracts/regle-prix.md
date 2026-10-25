@@ -53,4 +53,4 @@ Exemple, VEL-LYO-02 (départ standard 11:00), tranche MOYENNE, créneau 13:00 :
 
 - La source et la date de la prévision d'occupation utilisée.
 - Le comportement si la prévision est absente.
-- Le mock fourni aux squads voisines (API-05).
+- Le mock fourni aux autres squads (API-05).

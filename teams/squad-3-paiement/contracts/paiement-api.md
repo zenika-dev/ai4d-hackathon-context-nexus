@@ -56,4 +56,4 @@ Statuts : `CAPTURED` (en ligne), `POSTED_TO_FOLIO` (à l'hôtel), `FAILED`, `REF
 
 - Le remboursement (RM-04) et son endpoint.
 - Les contraintes PCI détaillées (voir `contraintes-pci.md`).
-- Le mock PayVel et le mock de l'API fournis aux voisines (API-05).
+- Le mock PayVel et le mock de l'API fournis aux autres squads (API-05).
