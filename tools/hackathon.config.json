@@ -1,0 +1,150 @@
+{
+  "_": "Configuration du hackathon du 26/10/2026 : lue par hackathon-status, nexus-board et event. Horaires de la squad 1 ; les autres squads sont décalées (voir KIT.md).",
+  "date": "2026-10-26",
+  "start": "13:30",
+  "end": "17:30",
+  "gates": {
+    "G1": {
+      "name": "Ready to Spec",
+      "phase": "Discover",
+      "keeper": "produit"
+    },
+    "G2": {
+      "name": "Ready to Build",
+      "phase": "Design",
+      "keeper": "tech"
+    },
+    "G3": {
+      "name": "Ready to Release",
+      "phase": "Develop",
+      "keeper": "tech"
+    },
+    "G4": {
+      "name": "Released and Observable",
+      "phase": "Deploy",
+      "keeper": "run"
+    }
+  },
+  "hats": {
+    "Context Engineer": "Prépare le contexte fourni aux agents : lit les contrats des autres squads, publie celui de la squad.",
+    "Specification Engineer": "Transforme le besoin en spec exploitable par l'agent : tient la plume de l'Intent, de la spec et du contrat.",
+    "Agentic Workflow Orchestrator": "Règle et lance les agents sur les tâches, surveille le budget de tokens.",
+    "Decision Guarantor": "Valide les décisions assistées par agent, signe chaque gate et tranche les exceptions."
+  },
+  "milestones": [
+    {
+      "id": "M1",
+      "label": "regle-prix v1 publiée",
+      "why": "Offre et Paiement en dépendent : sans elle, leur G2 se joue sur une version périmée.",
+      "artifact": "teams/squad-2-prix/contracts/regle-prix.md",
+      "minVersion": "1.0.0",
+      "due": "14:55"
+    },
+    {
+      "id": "M2",
+      "label": "evenements-achat v1 publiés",
+      "why": "Les KPI de Prix s'épinglent dessus avant leur G2.",
+      "artifact": "teams/squad-4-experience/contracts/evenements-achat.md",
+      "minVersion": "1.0.0",
+      "due": "15:05"
+    }
+  ],
+  "squads": {
+    "squad-1-offre": {
+      "number": 1,
+      "label": "Offre",
+      "offsetMin": 0,
+      "pci": false,
+      "volet": "API d'offre : éligibilité et prix du late check-out par réservation",
+      "slots": {
+        "G1": "14:25",
+        "G2": "15:10",
+        "G3": "16:10",
+        "G4": "16:35"
+      },
+      "g4Publish": [],
+      "specifySeed": "L'API d'offre décide l'éligibilité d'une réservation au late check-out (RM-01 à RM-04) et calcule le prix de chaque créneau à partir des bornes publiées par la squad Prix et des horaires de l'hôtel.",
+      "questions": [
+        "Que répond l'API quand une donnée nécessaire au calcul manque ?",
+        "Quelle heure fait foi pour « la veille 22:00 » : serveur, client ou hôtel ?",
+        "Le prix que vous renvoyez est-il exactement celui que Paiement va débiter et qu'Expérience va afficher ?",
+        "Qu'est-ce qu'Expérience doit pouvoir afficher quand la réservation n'est pas éligible ?"
+      ],
+      "demoPrompt": "Écris la fonction qui calcule le prix d'un late check-out à 15h pour un hôtel de Lyon. Donne le code et un exemple chiffré.",
+      "demoWatch": "Comptez ce que l'agent invente : tarifs, tranches d'occupation, format des montants, heure qui fait foi. Avec contexte : bornes de regle-prix, montants en centimes (priceMinor), heure locale de l'hôtel, offerId et motifs d'éligibilité du contrat."
+    },
+    "squad-2-prix": {
+      "number": 2,
+      "label": "Prix",
+      "offsetMin": 5,
+      "pci": false,
+      "volet": "Règle de prix (plancher, plafond) et KPI de l'offre",
+      "slots": {
+        "G1": "14:30",
+        "G2": "15:15",
+        "G3": "16:15",
+        "G4": "16:40"
+      },
+      "g4Publish": [
+        "teams/squad-2-prix/contracts/kpi.md"
+      ],
+      "specifySeed": "La règle de prix fixe le plancher et le plafond du supplément de late check-out selon l'occupation prévue de l'hôtel pour la nuit du départ, et les KPI de l'offre sont calculés à partir des événements d'achat et des réservations éligibles.",
+      "questions": [
+        "D'où vient la prévision d'occupation, de quand date-t-elle, et que fait la règle quand elle manque ?",
+        "Avec quels paramètres Offre et Paiement appellent-ils votre règle, et que leur renvoyez-vous quand aucun LCO n'est vendable ?",
+        "Quels seuils de KPI viennent d'une décision humaine (Intent) et lesquels sont de simples suivis ?",
+        "Si la Direction Revenu Annexe change la règle, qui prévenez-vous et comment ?"
+      ],
+      "demoPrompt": "Propose la règle de plancher et de plafond du supplément de late check-out selon l'occupation de l'hôtel. Donne les montants.",
+      "demoWatch": "Comptez ce que l'agent invente : tranches, montants, devise, source de l'occupation. Avec contexte : tranches BASSE à COMPLET et bornes du contrat v0, montants en centimes, aucune vente quand l'hôtel est complet, et des questions sur ce que le contrat ne dit pas."
+    },
+    "squad-3-paiement": {
+      "number": 3,
+      "label": "Paiement",
+      "offsetMin": 10,
+      "pci": true,
+      "volet": "Encaissement du supplément, en ligne (PayVel) ou à l'hôtel",
+      "slots": {
+        "G1": "14:35",
+        "G2": "15:20",
+        "G3": "16:20",
+        "G4": "16:45"
+      },
+      "g4Publish": [],
+      "specifySeed": "Le service de paiement encaisse le supplément de late check-out en ligne via PayVel ou l'ajoute à la note de chambre, en recalculant côté serveur un montant conforme à l'offre et aux bornes de prix, sans jamais manipuler de donnée de carte.",
+      "questions": [
+        "Comment recalculez-vous le montant côté serveur (SEC-05), et à partir de quelle source ?",
+        "Qui, nommément, signe le code qui déclenche un débit ? Quand ?",
+        "Que se passe-t-il si l'offre a changé de prix entre l'affichage et le paiement ?",
+        "Le remboursement (RM-04) est-il dans votre volet du dry run, ou explicitement reporté ?"
+      ],
+      "demoPrompt": "Écris l'endpoint qui encaisse le supplément de late check-out avec la carte bancaire du client.",
+      "demoWatch": "Comptez ce que l'agent invente : le PSP (souvent Stripe), les routes, les noms de champs, les codes d'erreur, le mode « à l'hôtel ». Avec contexte : PayVel et son jeton, Idempotency-Key, offerId, amountMinor recalculé côté serveur (SEC-05), erreurs LCO_…, mode AT_HOTEL sans appel PSP, signature humaine du code de débit (SEC-02)."
+    },
+    "squad-4-experience": {
+      "number": 4,
+      "label": "Expérience",
+      "offsetMin": 15,
+      "pci": false,
+      "volet": "Tuile « Gérer ma réservation » et carte de late check-out",
+      "slots": {
+        "G1": "14:40",
+        "G2": "15:25",
+        "G3": "16:25",
+        "G4": "16:50"
+      },
+      "g4Publish": [
+        "teams/squad-4-experience/contracts/evenements-achat.md"
+      ],
+      "specifySeed": "Depuis « Gérer ma réservation », le client voit s'il peut partir plus tard, choisit un créneau, paie en ligne ou à l'hôtel et retrouve sa nouvelle heure de départ ; chaque étape émet un événement d'achat exploitable par les KPI.",
+      "questions": [
+        "Comment afficher un prix reçu d'Offre dans le format Vela DS, et lu correctement par VoiceOver / TalkBack ?",
+        "Quel montant mettez-vous dans `amount_minor`, et à partir de quel champ de quel contrat ?",
+        "Que voit le client quand le paiement en ligne est refusé ? Et quand l'offre a expiré ?",
+        "Quelle plateforme implémentez-vous pendant le dry run, et laquelle est seulement spécifiée ?"
+      ],
+      "demoPrompt": "Écris le composant qui affiche le prix d'un late check-out dans l'app.",
+      "demoWatch": "Comptez ce que l'agent invente : composants, format du prix, libellés, accessibilité. Avec contexte : composants Vela DS (VelaTile, VelaCard…), prix au format 35,00 €, états du contrat d'écrans, lecture par lecteur d'écran (A11Y-03)."
+    }
+  }
+}

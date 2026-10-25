@@ -33,4 +33,4 @@ consumes: [programme/late-checkout/operations/feature-flags.md@1.0.0, programme/
 <Commande, durée, qui décide, qui prévenir.>
 
 ## Coût IA
-<Tokens consommés par la squad jusqu'ici (relevé du greffier).>
+<Consommation de Claude relevée dans la barre de gauche (« Session ») et ce qu'elle a produit (tests verts, gates passées). Le TOM lit toujours le coût avec la qualité.>

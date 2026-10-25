@@ -19,4 +19,4 @@ consumption-mode: system-prompt
 | API-02 | Chaque champ a un type, une unité et un exemple. Tout montant est un **entier en centimes** nommé `…Minor` (`amountMinor`, `priceMinor`), accompagné de sa devise. |
 | API-03 | Un changement qui casse un consommateur incrémente la version **majeure** du contrat. |
 | API-04 | Chaque contrat liste ses consommateurs connus (`consumers`), qui l'épinglent dans `consumes`. |
-| API-05 | Chaque squad fournit un **mock** de son API (ou de sa règle) utilisable par les voisines dès G2. |
+| API-05 | Chaque squad fournit un **mock** de son API (ou de sa règle) utilisable par les autres squads dès G2. |

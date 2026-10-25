@@ -39,6 +39,9 @@ context-nexus/
       contracts/               ← contrats publiés (v0 fournis par l'animation)
       operations/              ← runbook, journal de flags
   tools/context-assemble.mjs   ← simule le Context Assembler
+  tools/hackathon-status.mjs   ← où en est la squad, que manque-t-il pour la gate, quelle est la prochaine étape
+  tools/nexus-board.mjs        ← écran commun de la salle (animation) · tools/event.mjs : l'événement scripté
+  tools/overlay/               ← coach, style pédagogique et garde-fous posés dans chaque starter
   gabarits/                    ← gabarits des livrables G1 à G6 (à copier dans teams/<squad>/)
 ```
 
@@ -47,9 +50,9 @@ context-nexus/
 | Registre | Question | Ce qu'on y met pendant le dry run | Qui écrit |
 |---|---|---|---|
 | **Knowledge** | Ce qu'on sait | Brief, glossaire, hôtels, Decision Contexts | Humains (TL owner) |
-| **Intent** | Ce qu'on veut | Business Intent Spec (G1), specs Spec Kit (G2), Opportunity (G5), Retirement (G6) | **Humains uniquement** (PO owner) |
+| **Purpose** (dossier `intent/`) | Ce qu'on veut | Business Intent Spec (G1), specs Spec Kit (G2), Opportunity (G5), Retirement (G6) | **Humains uniquement** (PO owner) |
 | **Contracts** | Ce qu'on exige | Contrats d'API, règle de prix, événements, seuils vérifiables | **Humains uniquement** (TL + domaine) |
-| **Operations** | Ce qu'on fait | Runbook, journal de flags, procédure de rollback (G4) | Collectif squad |
+| **Process** (dossier `operations/`) | Ce qu'on fait | Runbook, journal de flags, procédure de rollback (G4) | Collectif squad |
 
 **Invariante** : l'agent peut proposer un brouillon d'Intent ou de Contracts, mais c'est un humain de la squad
 qui le relit, le signe (`owner`) et le passe en `active`.
@@ -61,7 +64,7 @@ Chaque fichier `.md` des registres commence par :
 ```yaml
 ---
 id: squad-2-prix/regle-prix           # identifiant stable
-register: contracts                   # knowledge | intent | contracts | operations
+register: contracts                   # knowledge | intent | contracts | operations  (Purpose = intent, Process = operations : vocabulaire du TOM)
 level: team                           # org | programme | team
 owner: squad-2-prix                   # rôle ou squad qui répond de l'artefact
 status: active                        # draft | active | stale | deprecated | superseded

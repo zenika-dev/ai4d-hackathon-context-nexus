@@ -11,9 +11,9 @@ version: 1.0.0
 last-validated: 2026-10-26
 consumption-mode: context-injection
 source: starter-<squad>/specs/001-<nom>/spec.md
-consumes: [teams/<squad>/intent/business-intent.md@1.0.0, teams/<voisine>/contracts/<contrat>.md@<version actuelle>, ...]
+consumes: [teams/<squad>/intent/business-intent.md@1.0.0, teams/<autre-squad>/contracts/<contrat>.md@<version actuelle>, ...]
 ---
 ```
 
-Épinglez **toutes** les versions de contrats voisins que la spec utilise. C'est cet épinglage qui permet à
-`context-assemble` de vous prévenir quand une voisine publie une nouvelle version.
+Épinglez **toutes** les versions de contrats des autres squads que la spec utilise. C'est cet épinglage qui permet à
+`context-assemble` de vous prévenir quand une autre squad publie une nouvelle version.

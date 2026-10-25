@@ -60,4 +60,4 @@ Renvoie l'éligibilité d'une réservation au late check-out et, si elle est él
 
 - Les règles d'éligibilité exactes (RM-02, RM-03) et leur source de données.
 - Le calcul du prix de chaque créneau à partir de la règle de prix.
-- Le mock fourni aux squads voisines (API-05).
+- Le mock fourni aux autres squads (API-05).

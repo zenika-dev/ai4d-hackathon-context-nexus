@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Écran commun · Hackathon Champions</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#020032; --surface:#0B0B48; --surface2:#14145A; --line:#2B2B6B;
+  --ink:#E1EBEB; --muted:#B2B2C8; --teal:#5EBBC6; --teal-t:#0A3550; --teal-b:#14586B;
+  --sand:#D6A978; --sand-t:#2D2216; --bordeaux:#7A1042; --rose:#FF9DB8; --ok:#5EBBC6;
+  --font:'Montserrat',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.4;padding:18px 24px 32px}
+body.off::before{content:"Connexion à l'écran perdue : nouvel essai toutes les 3 secondes";position:fixed;top:0;left:0;right:0;background:var(--bordeaux);color:var(--ink);text-align:center;padding:6px;font-size:14px;z-index:50}
+h1,h2,h3,p{margin:0}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--sand)}
+.top{display:grid;grid-template-columns:1fr auto 1fr;gap:20px;align-items:center;margin-bottom:14px}
+.top h1{font-size:clamp(20px,2.2vw,30px);font-weight:700}
+.clock{font-size:clamp(36px,5vw,64px);font-weight:700;letter-spacing:.02em;text-align:center;font-variant-numeric:tabular-nums;line-height:1}
+.clock small{display:block;font-size:14px;font-weight:600;color:var(--muted);letter-spacing:.08em;margin-top:4px}
+.right{text-align:right}
+.pill{display:inline-block;font-size:14px;font-weight:700;padding:4px 14px;border-radius:999px;background:var(--teal);color:var(--bg)}
+.bar{height:6px;background:var(--surface2);border-radius:3px;margin-top:8px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--teal)}
+.banner{display:none;border-radius:14px;padding:12px 18px;margin:0 0 14px;font-weight:600;font-size:18px}
+.banner.open{display:block;background:var(--bordeaux);border:2px solid var(--rose)}
+.banner.done{display:block;background:var(--teal-t);border:2px solid var(--teal)}
+.banner b{font-variant-numeric:tabular-nums}
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.sq{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.sqh{display:flex;gap:10px;align-items:center}
+.num{flex:none;width:34px;height:34px;border-radius:50%;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-weight:700}
+.sqh h3{font-size:20px}
+.sqh p{font-size:12px;color:var(--muted);line-height:1.25}
+.blk{align-self:flex-start;font-size:13px;font-weight:700;padding:3px 12px;border-radius:999px;background:var(--surface2);border:1px solid var(--line)}
+.gates{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.g{font:inherit;color:inherit;border:1.5px solid var(--line);background:transparent;border-radius:10px;padding:6px 2px;font-weight:700;font-size:15px;display:flex;flex-direction:column;align-items:center;gap:1px;cursor:default}
+.g small{font-weight:500;font-size:11px;color:var(--muted)}
+.g.go{background:var(--teal);border-color:var(--teal);color:var(--bg)} .g.go small{color:var(--bg)}
+.g.nogo{background:var(--bordeaux);border-color:var(--rose)}
+.g.due{border-color:var(--sand);background:var(--sand-t);color:var(--sand);animation:pulse 1.6s ease-in-out infinite}
+.g.soon{border-color:var(--sand);color:var(--sand)}
+.g.todo{color:var(--muted)}
+body.keeper .g{cursor:pointer}
+body.keeper .g:hover{border-color:var(--ink)}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion:reduce){.g.due{animation:none}}
+.nxt{font-size:14px;color:var(--muted)} .nxt b{color:var(--ink);font-variant-numeric:tabular-nums}
+.meta{font-size:12px;color:var(--muted)}
+.mid{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:12px;margin-bottom:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;min-width:0}
+.card h2{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--sand);font-weight:700;margin-bottom:10px}
+.leg{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:8px}
+.leg i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px;border:1.5px solid}
+.side{display:flex;flex-direction:column;gap:12px}
+.ms{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--line);font-size:14px}
+.ms:first-of-type{border-top:0}
+.ms .ic{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700;border:1.5px solid var(--line)}
+.ms.done .ic{background:var(--teal);border-color:var(--teal);color:var(--bg)}
+.ms.late .ic{background:var(--bordeaux);border-color:var(--rose)}
+.ms small{display:block;color:var(--muted);font-size:12px}
+.inc{padding:8px 0;border-top:1px solid var(--line);font-size:14px}
+.inc:first-of-type{border-top:0}
+.inc b{font-variant-numeric:tabular-nums}
+.inc small{display:block;color:var(--muted);font-size:12px}
+.feed{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 24px;font-size:13px}
+.feed li{display:flex;gap:10px;padding:4px 0;border-top:1px solid var(--line);min-width:0}
+.feed time{flex:none;color:var(--muted);font-variant-numeric:tabular-nums}
+.feed span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.me{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:12px;margin:0 0 14px;align-items:start}
+.me[hidden]{display:none}
+.me .now{border:2px solid var(--teal-b);background:var(--teal-t)}
+.me h2{color:var(--teal)}
+.me .step{font-size:24px;font-weight:700;line-height:1.2;margin-bottom:8px}
+.chip{display:inline-block;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;border:1px solid var(--teal-b);color:var(--teal);margin-bottom:12px}
+.lbl{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);margin-bottom:4px}
+.say{display:flex;align-items:stretch;border:2px solid var(--teal);border-radius:12px;overflow:hidden;margin:0 0 12px;background:var(--bg)}
+.say p{flex:1;min-width:0;padding:12px 14px;font-size:17px;font-weight:600;white-space:pre-wrap}
+.say button{cursor:pointer;border:0;background:var(--teal);color:var(--bg);font:inherit;font-weight:700;font-size:14px;padding:0 18px}
+.hdo{border-left:3px solid var(--sand);padding:6px 10px;margin:0 0 12px;font-size:14px}
+.hdo b{color:var(--sand)}
+.left{background:var(--sand-t);border:1px solid var(--sand);border-radius:10px;padding:8px 12px;margin:0 0 12px;font-size:14px}
+.left b{color:var(--sand)}
+.left ul{margin:4px 0 0;padding-left:18px}
+.more{border-top:1px solid var(--teal-b);padding-top:8px;font-size:14px}
+.more summary{cursor:pointer;font-weight:600;color:var(--teal);list-style:none;display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.more summary::-webkit-details-marker{display:none}
+.more summary b::before{content:"▸ ";} .more[open] summary b::before{content:"▾ ";}
+.more summary span{font-weight:500;color:var(--muted);font-size:13px}
+.more p{margin-top:8px;color:var(--ink)} .more p b{color:var(--teal)}
+.gcard{border:2px solid var(--line)}
+.gcard.ready{border-color:var(--teal);box-shadow:0 0 0 3px rgba(94,187,198,.18)}
+.gcard.nogo{border-color:var(--rose)}
+.ghead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.ghead h2{margin:0}
+.ghead .when{font-size:14px;color:var(--muted)} .ghead .when b{color:var(--ink);font-size:18px;font-variant-numeric:tabular-nums}
+.score{display:flex;align-items:center;gap:14px;margin-bottom:6px}
+.score .big{font-size:34px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.score .big small{font-size:18px;color:var(--muted)}
+.score p{font-size:19px;font-weight:700;line-height:1.25}
+.meter{display:flex;gap:5px;margin:0 0 12px}
+.meter i{flex:1;height:10px;border-radius:5px;background:var(--surface2);border:1.5px solid var(--line)}
+.meter i.ok{background:var(--teal);border-color:var(--teal)}
+.meter i.unk{border-color:var(--sand);border-style:dashed}
+.ready-msg{background:var(--teal);color:var(--bg);border-radius:10px;padding:10px 12px;font-weight:700;font-size:15px;margin-bottom:12px}
+.nogo-msg{background:var(--bordeaux);border:1px solid var(--rose);border-radius:10px;padding:10px 12px;font-weight:600;font-size:15px;margin-bottom:12px}
+.crit{list-style:none;margin:0 0 12px;padding:0;display:flex;flex-direction:column;gap:5px}
+.crit li{display:flex;gap:10px;align-items:flex-start;padding:5px 10px;border-radius:10px;border:1.5px solid transparent;font-size:14px}
+.crit .ic{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:14px;line-height:1}
+.crit .tx{flex:1;min-width:0}
+.crit .tx small{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.crit .id{flex:none;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;padding-top:4px}
+.crit li.ok .ic{background:var(--teal);color:var(--bg)}
+.crit li.ok .tx{color:var(--muted)}
+.crit li.todo{border-color:var(--sand);background:var(--sand-t)}
+.crit li.todo .ic{border:2px solid var(--sand)}
+.crit li.todo .tx{font-weight:700}
+.crit li.unk .ic{border:2px dashed var(--muted);color:var(--muted)}
+.oral{font-size:13px;color:var(--muted)}
+.oral p{font-weight:700;color:var(--ink);margin-bottom:4px}
+.oral ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
+.sq.mine{border:2px solid var(--teal);box-shadow:0 0 0 3px rgba(94,187,198,.15)}
+.sq.mine .blk::after{content:" · vous";color:var(--teal)}
+@media (max-width:1100px){.me{grid-template-columns:1fr}}
+.kbar{display:none;margin:0 0 14px;padding:10px 14px;border:2px dashed var(--sand);border-radius:12px;align-items:center;gap:14px;flex-wrap:wrap}
+body.keeper .kbar{display:flex}
+button.act{font:inherit;font-weight:700;border:0;border-radius:10px;padding:10px 18px;background:var(--sand);color:var(--bg);cursor:pointer}
+button.act.sec{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+dialog{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:16px;padding:20px 22px;max-width:560px;width:calc(100% - 32px)}
+dialog::backdrop{background:rgba(2,0,50,.8)}
+dialog h3{font-size:20px;margin-bottom:4px}
+dialog ul{list-style:none;padding:0;margin:6px 0 12px;font-size:14px}
+dialog li{padding:2px 0}
+dialog .sub{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--sand);font-weight:700;margin-top:10px}
+dialog label{display:block;font-size:14px;margin:8px 0 4px}
+dialog input[type=text],dialog textarea{width:100%;font:inherit;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.verd{display:flex;gap:10px;margin:10px 0}
+.verd label{flex:1;margin:0;border:1.5px solid var(--line);border-radius:10px;padding:10px;text-align:center;font-weight:700;cursor:pointer}
+.verd input{margin-right:8px}
+.verd label:has(input:checked){border-color:var(--teal);background:var(--teal-t)}
+.verd label.nogo:has(input:checked){border-color:var(--rose);background:var(--bordeaux)}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:10px;font-weight:600;display:none;z-index:60}
+@media (max-width:1100px){.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}.mid{grid-template-columns:1fr}.feed{grid-template-columns:1fr}.top{grid-template-columns:1fr auto;gap:8px 16px}.top .clock{font-size:34px}.right{grid-column:1/-1;text-align:left}}
+/* Infobulles : le détail au survol, pour garder l'écran court */
+[data-tip]{cursor:help}
+.tipline{border-bottom:1.5px dotted var(--teal)}
+.tipbox{position:fixed;z-index:60;max-width:min(420px,calc(100vw - 24px));background:var(--surface2);border:1px solid var(--teal-b);border-radius:10px;padding:10px 13px;font-size:14px;line-height:1.5;color:var(--ink);box-shadow:0 10px 28px rgba(0,0,0,.5);pointer-events:none;font-weight:400;text-transform:none;letter-spacing:0}
+.tipbox[hidden]{display:none}
+.tipbox b{color:var(--teal)}
+.tipbox .k{display:block;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--sand);margin-bottom:3px}
+</style>
+</head>
+<body>
+<div class="top">
+  <div><p class="eyebrow">Hackathon Champions · 4 h</p><h1><span class="tipline" tabindex="0" data-tip="<span class=k>Le sujet</span>Vélora Hôtels (société fictive) veut vendre le late check-out en ligne. Quatre squads construisent chacune un volet : Offre, Prix, Paiement, Expérience. Aucune ne peut finir seule : chacune publie des contrats et lit ceux des autres dans le Context Nexus.">Late check-out chez Vélora</span></h1></div>
+  <div class="clock"><span id="clock">--:--:--</span><small id="tplus"></small></div>
+  <div class="right"><span class="pill" id="block" tabindex="0" data-tip="<span class=k>L&#39;agenda</span>Le bloc en cours (horaires de la squad 1 ; les squads 2, 3 et 4 sont décalées de 5, 10 et 15 minutes). La barre montre l&#39;avancement des 4 heures.">…</span><div class="bar"><i id="prog" style="width:0"></i></div></div>
+</div>
+
+<div class="banner" id="banner"></div>
+
+<section class="me" id="me" hidden aria-label="Votre squad"></section>
+
+<div class="kbar" id="kbar"></div>
+
+<section class="grid4" id="squads" aria-label="Avancement des squads"></section>
+
+<section class="mid">
+  <div class="card">
+    <h2><span class="tipline" tabindex="0" data-tip="<span class=k>Le Context Nexus</span>La mémoire partagée des humains et des agents, en quatre registres : Knowledge (ce qu&#39;on sait), Purpose (ce qu&#39;on veut), Contracts (ce qu&#39;on exige), Process (ce qu&#39;on fait). Ce graphe montre les contrats : une flèche va de la squad qui publie vers celle qui lit. Chacune <b>épingle</b> la version qu&#39;elle utilise : si elle change, le Nexus le voit.">Context Nexus · les contrats et leurs versions</span></h2>
+    <div id="graph"></div>
+    <div class="leg">
+      <span tabindex="0" data-tip="Le contrat et ceux qu&#39;il utilise sont à leur version actuelle : on peut construire dessus."><i style="border-color:var(--teal);background:var(--surface2)"></i>à jour</span>
+      <span tabindex="0" data-tip="<span class=k>stale</span>Un contrat qu&#39;il utilise a changé depuis son épinglage : il n&#39;est plus une base sûre. La squad relit le changement, met à jour, ré-épingle et republie. Règle Vélora n°7 : pas de code nouveau sur un artefact stale."><i style="border-color:var(--sand);background:var(--sand-t)"></i>stale : à relire</span>
+      <span tabindex="0" data-tip="Une nouvelle version vient d&#39;être publiée. Une version majeure (2.0.0) est une rupture : les squads qui le lisent doivent se réaligner. Un chrono mesure le temps de réalignement."><i style="border-color:var(--rose);background:var(--bordeaux)"></i>vient de changer</span>
+      <span tabindex="0" data-tip="Il lit encore une version provisoire (v0) d&#39;un autre contrat : normal avant le Design. La squad s&#39;épinglera sur la v1 dès qu&#39;elle sera publiée."><i style="border-color:var(--teal);border-style:dashed;background:var(--surface2)"></i>nouvelle version attendue</span>
+    </div>
+  </div>
+  <div class="side">
+    <div class="card"><h2><span class="tipline" tabindex="0" data-tip="<span class=k>Jalons communs</span>Deux contrats publiés tôt, avant le reste, pour que chaque squad puisse épingler la bonne version avant sa gate G2 : M1, la règle de prix (squad Prix) ; M2, les événements d&#39;achat (squad Expérience).">Jalons communs</span></h2><div id="ms"></div></div>
+    <div class="card"><h2><span class="tipline" tabindex="0" data-tip="<span class=k>Réalignement</span>Quand un contrat déjà publié change, ses lecteurs doivent relire, mettre à jour et republier. Le chrono mesure ce temps : une mesure de vitesse, toujours lue avec sa qualité (gate-check vert).">Changements de contrat</span></h2><div id="inc"></div></div>
+  </div>
+</section>
+
+<section class="card"><h2><span class="tipline" tabindex="0" data-tip="<span class=k>Publications</span>Chaque ligne est une publication dans le Nexus, avec son heure. Manifesto du TOM : « ce qui n&#39;est pas écrit n&#39;existe pas ». Tant qu&#39;une squad n&#39;a pas publié, les autres ne voient rien.">Publications dans le Nexus</span></h2><ul class="feed" id="feed"></ul></section>
+
+<dialog id="dlg"><form method="dialog" id="dform"></form></dialog>
+<div class="toast" id="toast"></div>
+
+<script>
+var S = null, offset = 0, meCd = null, moreOpen = false;
+// Ce que vérifie chaque critère automatique, et pourquoi (survol).
+var CRIT = {
+  'G1-1': 'Le document existe dans le Nexus, dans le dossier de la squad : ce qui n\'est pas publié n\'existe pas pour le gate keeper.',
+  'G1-2': 'Un humain nommé l\'a signée : cadrer l\'intention n\'est jamais délégué à l\'IA.',
+  'G1-3': 'La date de validation est écrite : on sait de quand datent les informations.',
+  'G1-4': 'Problème, utilisateurs, succès chiffré, données, priorité : les écrire oblige à choisir.',
+  'G1-5': 'Un nombre dans le critère de succès : sans lui, impossible de juger la valeur en G5.',
+  'G2-1': 'La spec Spec Kit est publiée dans le Nexus, avec son en-tête : les autres squads et le gate keeper la lisent.',
+  'G2-2': 'Un humain nommé répond de la spec.',
+  'G2-3': 'Vos contrats sont figés en v1 : c\'est votre promesse aux autres squads, elles s\'épinglent dessus.',
+  'G2-4': 'Spec et contrats citent la version actuelle de ce qu\'ils utilisent ; sinon, vous construiriez sur du périmé.',
+  'G3-1': 'Le code respecte les règles de style communes (ENG-01).',
+  'G3-2': 'Les types du code sont cohérents : une famille d\'erreurs évitée avant l\'exécution.',
+  'G3-3': 'Les tests passent et couvrent au moins 70 % du code ; un test par critère d\'acceptance (ENG-02 à 04).',
+  'G3-4': 'Aucune donnée de carte ni secret dans le code (SEC-01, SEC-04).',
+  'G3-5': 'Aucune dépendance avec une vulnérabilité haute (SEC-03).',
+  'G3-6': 'Rien de stale : la spec est à jour des derniers contrats des autres squads.',
+  'G3-7': 'Le code de débit porte la signature d\'un humain nommé (PCI) : jamais déléguée à l\'IA.',
+  'G4-1': 'Chaque flag activé a sa ligne dans le journal : qui, quand, pourquoi (Release ≠ Activation).',
+  'G4-2': 'Le runbook est publié : comment exploiter le service.',
+  'G4-3': 'Un owner d\'exploitation et un retour arrière sont écrits.',
+  'G4-4': 'Le service répond et ses métriques sont lisibles.'
+};
+function tipAttr(html) { return ' tabindex="0" data-tip="' + String(html).replace(/&/g, '&amp;').replace(/"/g, '&quot;') + '"'; }
+function tipH(k, body) { return '<span class=k>' + esc(k) + '</span>' + body; }
+function gateTip(g, x) {
+  var v = x.verdict ? '<br><b>Verdict :</b> ' + esc(x.verdict.verdict) + ' (' + esc(x.verdict.keeper) + (x.verdict.note ? ', « ' + esc(x.verdict.note) + ' »' : '') + ')' : '<br>Créneau : ' + esc(x.slot) + '.';
+  return tipH(g + ' · ' + x.name, 'Un contrôle automatique (le gate-check), puis une décision humaine : le gate keeper ' + esc(x.keeper) + (x.accountable ? ', qui joue ' + esc(x.accountable) + ' (chez Accor, c\'est cette fonction qui rend ce verdict)' : '') + '. Un NO-GO nomme le critère qui manque.' + v);
+}
+try { moreOpen = !!localStorage.getItem('moreOpen'); } catch (e) {}
+var $ = function (id) { return document.getElementById(id); };
+function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+function p2(n) { return String(n).padStart(2, '0'); }
+function dur(sec) { sec = Math.max(0, Math.round(sec)); var h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60; return (h ? h + ':' + p2(m) : m) + ':' + p2(s); }
+function parts(d) { var o = {}; new Intl.DateTimeFormat('en-GB', { timeZone: (S && S.tz) || 'Europe/Paris', hourCycle: 'h23', hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(d).forEach(function (x) { o[x.type] = x.value; }); return o; }
+function hhmm(iso) { var o = parts(new Date(iso)); return o.hour + ':' + o.minute; }
+function ago(iso) { if (!iso) return 'aucune activité'; var s = (Date.now() + offset - new Date(iso).getTime()) / 1000; if (s < 60) return 'à l\'instant'; if (s < 3600) return 'il y a ' + Math.round(s / 60) + ' min'; return 'il y a ' + Math.round(s / 3600) + ' h'; }
+function nowMs() { return Date.now() + offset; }
+
+async function poll() {
+  try {
+    var r = await fetch('/api/state', { cache: 'no-store' });
+    S = await r.json();
+    if (S.error) throw new Error(S.error);
+    offset = S.serverMs - Date.now();
+    document.body.classList.remove('off');
+    document.body.classList.toggle('keeper', !!S.keeper);
+    render();
+  } catch (e) { document.body.classList.add('off'); }
+}
+
+function render() { renderMe(); renderSquads(); renderGraph(); renderSide(); renderFeed(); renderKeeperBar(); renderBanner(); tick(); }
+
+function renderSquads() {
+  $('squads').innerHTML = S.squads.map(function (q) {
+    var gates = Object.keys(q.gates).map(function (g) {
+      var x = q.gates[g], mark = x.state === 'go' ? '✓ ' : (x.state === 'nogo' ? '✕ ' : '');
+      return '<button type="button" class="g ' + x.state + '" data-squad="' + esc(q.id) + '" data-gate="' + g + '" data-tip="' + esc(gateTip(g, x)) + '">' + mark + g + '<small>' + esc(x.slot) + '</small></button>';
+    }).join('');
+    var nxt = q.nextGate ? 'Prochaine gate ' + q.nextGate + (q.nextSlotSec > 0 ? ' dans <b data-cd="' + q.nextSlotSec + '" data-t0="' + Date.now() + '">' + dur(q.nextSlotSec) + '</b>' : ' : <b>créneau atteint</b>') : 'Les quatre gates sont passées';
+    var c = q.counts;
+    return '<article class="sq' + (S.me && S.me.id === q.id ? ' mine' : '') + '"><div class="sqh"><span class="num">' + q.number + '</span><div><h3><span class="tipline"' + tipAttr(tipH('Squad ' + q.number + ' · ' + q.label, esc(q.volet) + '.' + (function () { var pub = S.graph.nodes.filter(function (n) { return n.squad === q.id; }).map(function (n) { return n.label + ' v' + n.version; }); return pub.length ? '<br><b>Publie :</b> ' + esc(pub.join(', ')) : ''; })())) + '>' + esc(q.label) + '</span></h3><p>' + esc(q.volet) + '</p></div></div>'
+      + '<span class="blk">' + esc(q.block || 'Hors session') + '</span><div class="gates">' + gates + '</div><p class="nxt">' + nxt + '</p>'
+      + '<p class="meta"><span class="tipline"' + tipAttr(tipH('Artefacts', 'Les documents de la squad dans le Nexus (Intent, spec, contrats, runbook) qui sont actifs, c\'est-à-dire validés par un humain. « À réaligner » : un contrat qu\'ils utilisent a changé.')) + '>' + c.active + ' artefact(s) actif(s)</span>' + (c.stale ? ' · <span style="color:var(--sand)">' + c.stale + ' à réaligner</span>' : '') + ' · ' + ago(q.lastActivity) + '</p></article>';
+  }).join('');
+  Array.prototype.forEach.call(document.querySelectorAll('.g'), function (b) { b.addEventListener('click', function () { if (S.keeper) openGate(b.dataset.squad, b.dataset.gate); }); });
+}
+
+function renderMe() {
+  var m = S.me, el = $('me');
+  if (!m) { el.hidden = true; return; }
+  el.hidden = false;
+  document.querySelector('.top .eyebrow').textContent = 'Écran de la squad ' + m.label + ' · Hackathon Champions';
+  var g = m.gate, st = m.step;
+  var q = S.squads.filter(function (s) { return s.id === m.id; })[0];
+  meCd = q && q.nextSlotSec != null ? { sec: q.nextSlotSec, t0: Date.now() } : null;
+  // Panneau de gauche : l'étape en cours, la phrase à taper, le geste humain. Le reste se déplie.
+  var here = function (s) { return String(s || '').replace(/l'écran de votre squad \(onglet à côté de l'éditeur\)/g, 'cet écran'); };
+  var left = (st.items && st.items.length ? '<div class="left"><b>Ce qui reste :</b><ul>' + st.items.map(function (i) { return '<li>' + esc(i) + '</li>'; }).join('') + '</ul></div>' : '')
+    + (m.pinIssues.length ? '<div class="left"><b>Un contrat d\'une autre squad a changé :</b> ' + m.pinIssues.map(function (n) { return esc(n.path.split('/').pop().replace('.md', '') + ' ' + n.pinned + ' → ' + n.current); }).join(', ') + '</div>' : '')
+    + (m.unpublished.length ? '<div class="left"><b>Pas encore publié dans le Nexus :</b> ' + esc(m.unpublished.join(', ')) + '</div>' : '');
+  var more = [['Ce que vous apprenez', st.learn], ['Pourquoi', st.why], ['Ensuite', here(st.cue)], [st.hat, st.hatDoes], ['Sur le terrain', st.accor]]
+    .filter(function (x) { return x[1]; }).map(function (x) { return '<p><b>' + esc(x[0]) + ' :</b> ' + esc(x[1]) + '</p>'; }).join('');
+  var pi = m.phaseInfo;
+  var html = '<div class="card now"><h2>Votre squad ' + esc(m.label) + ' · <span class="tipline"' + tipAttr(tipH(m.phase + (pi ? ' · phase ' + pi.n + ' sur 4 du PDLC' : ''), pi ? 'Objectif : ' + esc(pi.goal) + '.<br>On en sort avec ' + esc(pi.output) + '.' : (/Deepen/.test(m.phase) ? 'Bonus : Deepen (la valeur réelle, G5) et Drop (le retrait de l\'ancien processus, G6).' : 'Une phase du PDLC, close par une gate.'))) + '>' + esc(m.phase) + '</span> · à faire maintenant</h2>'
+    + '<p class="step"><span class="tipline"' + tipAttr(tipH('Cette étape', (st.learn ? esc(st.learn) + '<br>' : '') + (st.why ? '<b>Pourquoi :</b> ' + esc(st.why) : ''))) + '>' + esc(st.label) + '</span></p>'
+    + (st.hat ? '<span class="chip"' + tipAttr(tipH('Responsabilité du TOM', (st.hatDef ? esc(st.hatDef) + '<br>' : '') + (st.hatDoes ? '<b>' + esc(st.hatDoes) + '</b><br>' : '') + 'Le TOM ne crée pas de nouveaux postes : il confie des responsabilités à des profils existants. On les apprend en les exerçant.')) + '>Responsabilité : ' + esc(st.hat) + '</span>' : '')
+    + left
+    + (st.say ? '<p class="lbl"><span class="tipline"' + tipAttr(tipH('À taper dans Claude', 'Une phrase en français, ou une commande Spec Kit (/speckit-…) : Claude fait le travail, vous relisez et vous décidez. Copiez-la dans le panneau Claude, à gauche de l\'éditeur.')) + '>À taper dans Claude</span></p><div class="say"><p>' + esc(st.say) + '</p><button type="button" id="saycp">Copier</button></div>' : '')
+    + (st.humanDo ? '<p class="hdo"><b class="tipline"' + tipAttr(tipH('Geste humain', 'Le TOM garde certaines décisions humaines, quel que soit le niveau de l\'IA : signer une intention, activer un flag, signer du code de débit. L\'agent ne les fait jamais à votre place : c\'est là que la responsabilité se joue.')) + '>Geste humain :</b> ' + esc(st.humanDo) + '</p>' : '')
+    + (more ? '<details class="more" id="more"' + (moreOpen ? ' open' : '') + '><summary><b>Comprendre cette étape</b><span>ou tapez /coach dans Claude</span></summary>' + more + '</details>' : '')
+    + '</div>' + renderGateCard(m, q);
+  if (html === el._html) return;   // rien n'a changé : on garde la sélection, le volet déplié, le bouton « Copié »
+  el._html = html;
+  el.innerHTML = html;
+  var d = $('more');
+  if (d) d.addEventListener('toggle', function () { moreOpen = d.open; try { localStorage.setItem('moreOpen', moreOpen ? '1' : ''); } catch (e) {} });
+  var b = $('saycp');
+  if (b) b.onclick = function () { var ok = function () { b.textContent = 'Copié ✓'; setTimeout(function () { b.textContent = 'Copier'; }, 1400); }; if (navigator.clipboard) navigator.clipboard.writeText(st.say).then(ok, function () {}); };
+}
+
+// Panneau de droite : où en est la squad face à sa prochaine gate, en un coup d'œil.
+function renderGateCard(m, q) {
+  var g = m.gate, st = m.step;
+  if (!g) return '<div class="card gcard ready"><h2>Les quatre gates sont passées</h2><p class="score"><span class="big">✓</span></p></div>';
+  var v = q && q.gates[g.id] ? q.gates[g.id].verdict : null;
+  var total = g.auto.length, ok = 0, unk = 0;
+  g.auto.forEach(function (c) { if (c.ok) ok++; else if (c.unknown) unk++; });
+  var todo = total - ok - unk, isGate = st.id ? st.id === 'gate' : /^Passer G\d/.test(st.label);   // écran lancé avant la mise à jour : pas de step.id
+  var cls = '', msg = '', head;
+  if (v && v.verdict === 'NO-GO') { cls = ' nogo'; msg = '<div class="nogo-msg">✕ NO-GO du gate keeper' + (v.note ? ' : « ' + esc(v.note) + ' »' : '') + '. Corrigez ce point, puis redemandez la gate.</div>'; }
+  if (todo === 0 && unk === 0) head = isGate ? 'Prêt pour ' + esc(g.id) : 'Contrôles au vert';
+  else if (todo === 0) head = 'Tout ce qui se voit d\'ici est vert';
+  else head = 'Il reste ' + todo + ' contrôle' + (todo > 1 ? 's' : '');
+  if (todo === 0 && isGate && !cls) {
+    cls = ' ready';
+    msg = '<div class="ready-msg">' + (unk ? 'Faites passer le gate-check (phrase à gauche) : il tranche les ' + unk + ' contrôles en pointillé. ' : '✓ Rien d\'autre à cocher. ') + 'Le gate keeper ' + esc(g.keeper) + ' vient à votre table à ' + esc(g.slot) + '.</div>';
+  } else if (todo === 0 && !isGate && !cls) {
+    msg = '<div class="left"><b>Pas encore prêt :</b> il reste l\'étape « ' + esc(st.label) + ' » (à gauche).</div>';
+  }
+  var cmd = /npm run|gabarits\/|git /;
+  var rows = g.auto.map(function (c) {
+    var k = c.ok ? 'ok' : (c.unknown ? 'unk' : 'todo');
+    var sub = k === 'unk' ? 'vérifié par le gate-check officiel' : (k === 'todo' && c.detail && !cmd.test(c.detail) ? c.detail : '');
+    return '<li class="' + k + '"' + tipAttr(tipH(c.id, esc(CRIT[c.id] || c.label) + (k === 'unk' ? '<br>Vérifié par le gate-check officiel, lancé dans votre Codespace.' : ''))) + '><span class="ic">' + (k === 'ok' ? '✓' : (k === 'unk' ? '?' : '')) + '</span><span class="tx">' + esc(c.label) + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span><span class="id">' + esc(c.id) + '</span></li>';
+  }).join('');
+  return '<div class="card gcard' + cls + '"><div class="ghead"><h2><span class="tipline"' + tipAttr(tipH(g.id + ' · ' + g.name, 'Une gate clôt la phase : un contrôle automatique (la liste ci-dessous), puis la décision du gate keeper ' + esc(g.keeper) + (g.accountable ? ', qui joue ' + esc(g.accountable) : '') + '. Le livrable de la phase devient l\'entrée de la suivante.')) + '>Avant ' + esc(g.id) + ' · ' + esc(g.name) + '</span></h2><span class="when">créneau <b>' + esc(g.slot) + '</b> <span id="mecd"></span></span></div>'
+    + '<div class="score"><span class="big">' + ok + '<small> / ' + total + '</small></span><p>' + head + (unk && todo ? '<br><span class="meta">' + unk + ' à vérifier par le gate-check</span>' : '') + '</p></div>'
+    + '<div class="meter">' + g.auto.map(function (c) { return '<i class="' + (c.ok ? 'ok' : (c.unknown ? 'unk' : '')) + '"></i>'; }).join('') + '</div>'
+    + msg + '<ul class="crit">' + rows + '</ul>'
+    + '<div class="oral"><p><span class="tipline"' + tipAttr(tipH('Ce que juge l\'humain', 'La machine vérifie la forme ; le gate keeper juge le fond, à l\'oral, en cinq minutes. Votre Decision Guarantor présente le dossier et engage la squad. Manifesto : « une gate se passe sur preuve, jamais sur déclaration ».')) + '>À défendre à l\'oral devant le gate keeper ' + esc(g.keeper) + '</span></p><ul>' + g.human.map(function (h) { return '<li>' + esc(h) + '</li>'; }).join('') + '</ul></div></div>';
+}
+
+function renderGraph() {
+  var N = S.graph.nodes, E = S.graph.edges;
+  if (!N.length) { $('graph').innerHTML = '<p class="meta">Aucun contrat publié.</p>'; return; }
+  var W = 176, H = 62, GX = 84, GY = 18, PAD = 8;
+  var cols = {};
+  N.forEach(function (n) { (cols[n.depth] = cols[n.depth] || []).push(n); });
+  var maxD = Math.max.apply(null, N.map(function (n) { return n.depth; }));
+  var order = {}; S.squads.forEach(function (q) { order[q.id] = q.number; });
+  var maxRows = 0, pos = {};
+  Object.keys(cols).forEach(function (d) {
+    cols[d].sort(function (a, b) { return (order[a.squad] || 9) - (order[b.squad] || 9) || a.label.localeCompare(b.label); });
+    maxRows = Math.max(maxRows, cols[d].length);
+    cols[d].forEach(function (n, i) { pos[n.id] = { x: PAD + d * (W + GX), y: PAD + i * (H + GY) }; });
+  });
+  var vw = PAD * 2 + (maxD + 1) * W + maxD * GX, vh = PAD * 2 + maxRows * H + (maxRows - 1) * GY;
+  var byId = {}; N.forEach(function (n) { byId[n.id] = n; });
+  var svg = '<svg viewBox="0 0 ' + vw + ' ' + vh + '" width="100%" role="img" aria-label="Graphe des contrats du Context Nexus">'
+    + '<defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>';
+  E.forEach(function (e) {
+    var a = pos[e.from], b = pos[e.to]; if (!a || !b) return;
+    var x1 = a.x + W, y1 = a.y + H / 2, x2 = b.x, y2 = b.y + H / 2, dx = Math.max(24, (x2 - x1) / 2);
+    var hot = byId[e.from].incident && byId[e.to].stale;
+    svg += '<path d="M' + x1 + ' ' + y1 + ' C' + (x1 + dx) + ' ' + y1 + ',' + (x2 - dx) + ' ' + y2 + ',' + x2 + ' ' + y2 + '" fill="none" stroke="' + (hot ? '#FF9DB8' : '#6C6CA0') + '" stroke-width="' + (hot ? 2.4 : 1.4) + '" marker-end="url(#ar)"/>';
+  });
+  N.forEach(function (n) {
+    var p = pos[n.id], fill = '#14145A', stroke = '#5EBBC6', dash = '', tx = '#E1EBEB', sub = '#B2B2C8';
+    if (n.incident) { fill = '#7A1042'; stroke = '#FF9DB8'; }
+    else if (n.stale) { fill = '#2D2216'; stroke = '#D6A978'; tx = '#D6A978'; }
+    else if (n.expected) { dash = ' stroke-dasharray="5 4"'; }
+    var note = n.stale ? n.issues.filter(function (i) { return i.kind !== 'INTROUVABLE'; }).map(function (i) { return i.path.split('/').pop().replace('.md', '') + ' ' + i.pinned + '→' + i.current; })[0] || 'stale' : (n.incident ? 'vient de changer' : n.squadLabel);
+    var consumers = E.filter(function (e) { return e.from === n.id; }).map(function (e) { return byId[e.to] ? byId[e.to].label + ' (' + byId[e.to].squadLabel + ')' : ''; }).filter(Boolean);
+    var ntip = tipH(n.label + ' · v' + n.version, 'Contrat de la squad ' + esc(n.squadLabel) + ', statut ' + esc(n.status) + '.'
+      + (consumers.length ? '<br><b>Lu par :</b> ' + esc(consumers.join(', ')) : '')
+      + (n.issues.length ? '<br><b>Épinglages à revoir :</b> ' + esc(n.issues.map(function (i) { return i.path.split('/').pop().replace('.md', '') + ' ' + i.pinned + ' → ' + i.current; }).join(', ')) : '')
+      + '<br>Version : la majeure (le premier chiffre) change seulement en cas de rupture.');
+    svg += '<g' + tipAttr(ntip) + '><rect x="' + p.x + '" y="' + p.y + '" width="' + W + '" height="' + H + '" rx="10" fill="' + fill + '" stroke="' + stroke + '" stroke-width="2"' + dash + '/>'
+      + '<text x="' + (p.x + 12) + '" y="' + (p.y + 22) + '" fill="' + tx + '" font-size="15" font-weight="700" font-family="Montserrat,system-ui,sans-serif">' + esc(n.label) + '</text>'
+      + '<text x="' + (p.x + 12) + '" y="' + (p.y + 40) + '" fill="' + tx + '" font-size="13" font-family="Montserrat,system-ui,sans-serif">v' + esc(n.version) + ' · ' + esc(n.status) + '</text>'
+      + '<text x="' + (p.x + 12) + '" y="' + (p.y + 55) + '" fill="' + sub + '" font-size="11" font-family="Montserrat,system-ui,sans-serif">' + esc(note.length > 30 ? note.slice(0, 29) + '…' : note) + '</text></g>';
+  });
+  $('graph').innerHTML = svg + '</svg>';
+}
+
+function renderSide() {
+  $('ms').innerHTML = S.milestones.length ? S.milestones.map(function (m) {
+    var cls = m.done ? 'done' : (m.late ? 'late' : '');
+    return '<div class="ms ' + cls + '"' + tipAttr(tipH(m.id + ' · ' + m.label, esc(m.why) + '<br>Fichier : ' + esc(m.artifact.split('/').slice(-1)[0]) + ', à publier avant ' + esc(m.due) + '.')) + '><span class="ic">' + (m.done ? '✓' : (m.late ? '!' : '')) + '</span><div><b>' + esc(m.id) + ' · ' + esc(m.label) + '</b><small>avant ' + esc(m.due) + (m.done ? ' · publié (v' + esc(m.current) + ')' : ' · ' + esc(m.why)) + '</small></div></div>';
+  }).join('') : '<p class="meta">Aucun jalon.</p>';
+  var inc = S.incidents.slice().reverse().slice(0, 3);
+  $('inc').innerHTML = inc.length ? inc.map(function (i) {
+    var open = !i.resolvedAt, t = open ? (nowMs() - new Date(i.startAt).getTime()) / 1000 : (new Date(i.resolvedAt) - new Date(i.startAt)) / 1000;
+    return '<div class="inc"><b>' + esc(i.label) + ' ' + esc(i.from) + ' → ' + esc(i.to) + '</b><small>' + (open ? (i.total - i.pending.length) + ' sur ' + i.total + ' consommateur(s) réaligné(s) · en cours depuis <b data-inc="' + esc(i.startAt) + '">' + dur(t) + '</b>' : 'réaligné en ' + dur(t) + ' (' + i.total + ' consommateur(s))') + '</small>'
+      + (open && i.pending.length ? '<small>À réaligner : ' + i.pending.map(function (p) { return esc(p.split('/')[1]); }).filter(function (v, k, a) { return a.indexOf(v) === k; }).join(', ') + '</small>' : '') + '</div>';
+  }).join('') : '<p class="meta">Aucun contrat publié n\'a encore changé. L\'événement du Develop arrive.</p>';
+}
+
+function renderFeed() {
+  $('feed').innerHTML = S.feed.slice(0, 12).map(function (f) { return '<li><time>' + hhmm(f.at) + '</time><span>' + esc(f.msg) + '</span></li>'; }).join('') || '<li><span class="meta">Rien publié pour l\'instant.</span></li>';
+}
+
+function renderBanner() {
+  var open = S.incidents.filter(function (i) { return !i.resolvedAt; })[0];
+  var b = $('banner');
+  if (open) { b.className = 'banner open'; b.innerHTML = '⚡ Un contrat partagé a changé : <b>' + esc(open.label) + ' ' + esc(open.from) + ' → ' + esc(open.to) + '</b> · ' + open.pending.length + ' artefact(s) à réaligner · <b data-inc="' + esc(open.startAt) + '">' + dur((nowMs() - new Date(open.startAt)) / 1000) + '</b>'; return; }
+  var recent = S.incidents.filter(function (i) { return i.resolvedAt && nowMs() - new Date(i.resolvedAt) < 300000; });
+  if (recent.length) {
+    var t0 = Math.min.apply(null, recent.map(function (i) { return new Date(i.startAt).getTime(); })), t1 = Math.max.apply(null, recent.map(function (i) { return new Date(i.resolvedAt).getTime(); }));
+    b.className = 'banner done';
+    b.innerHTML = '✓ Tout est réaligné : ' + recent.map(function (i) { return esc(i.label) + ' ' + esc(i.to); }).join(', ') + ' · en <b>' + dur((t1 - t0) / 1000) + '</b>';
+    return;
+  }
+  b.className = 'banner';
+}
+
+function renderKeeperBar() {
+  var k = $('kbar');
+  if (!S.keeper) { k.innerHTML = ''; return; }
+  k.innerHTML = '<span class="eyebrow">Poste des gate keepers</span><span class="meta">Cliquez sur une gate pour enregistrer un verdict.</span>'
+    + S.events.map(function (e) { return e.applied ? '<span class="meta">✓ Événement déclenché : ' + esc(e.title) + '</span>' : '<button class="act" type="button" data-ev="' + esc(e.id) + '">⚡ Déclencher : ' + esc(e.title) + '</button>'; }).join('');
+  Array.prototype.forEach.call(k.querySelectorAll('[data-ev]'), function (b) {
+    b.addEventListener('click', function () {
+      var ev = S.events.filter(function (e) { return e.id === b.dataset.ev; })[0];
+      $('dform').innerHTML = '<h3>Déclencher l\'événement ?</h3><p class="sub">À lire à voix haute, sans la commenter</p><p style="font-size:16px;margin:8px 0 12px">' + esc(ev.say || ev.announce) + '</p>'
+        + '<p class="sub">Pour l\'animation (à ne pas lire)</p><p class="meta">' + esc(ev.announce) + ' Le contrat sera modifié et publié dans le Context Nexus.</p>'
+        + '<div style="display:flex;gap:10px;margin-top:14px"><button class="act" type="button" id="evok">Déclencher</button><button class="act sec" type="button" id="evcancel">Annuler</button></div>';
+      $('dlg').showModal();
+      $('evcancel').onclick = function () { $('dlg').close(); };
+      $('evok').onclick = function () { $('dlg').close(); post('/api/event', { id: ev.id }); };
+    });
+  });
+}
+
+function tick() {
+  if (!S) return;
+  var n = nowMs(), d = new Date(n);
+  var o = parts(d); $('clock').textContent = o.hour + ':' + o.minute + ':' + o.second;
+  var el = (n - S.start) / 60000;
+  $('tplus').textContent = el < 0 ? 'début dans ' + dur(-el * 60) : (el > (S.end - S.start) / 60000 ? 'session terminée' : 'T+' + Math.floor(el / 60) + ':' + p2(Math.floor(el % 60)));
+  $('block').textContent = S.block ? S.block.id + ' · ' + S.block.from + '-' + S.block.to : 'Hors session';
+  $('prog').style.width = Math.min(100, Math.max(0, (n - S.start) / (S.end - S.start) * 100)) + '%';
+  Array.prototype.forEach.call(document.querySelectorAll('[data-cd]'), function (e) { e.textContent = dur(Number(e.dataset.cd) - (Date.now() - Number(e.dataset.t0)) / 1000); });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-inc]'), function (e) { e.textContent = dur((n - new Date(e.dataset.inc)) / 1000); });
+  var cd = $('mecd');
+  if (cd && meCd) { var left = meCd.sec - (Date.now() - meCd.t0) / 1000; cd.textContent = left <= 0 ? '· atteint' : (left > 3 * 3600 ? '' : '· dans ' + dur(left)); }
+}
+
+function toast(msg) { var t = $('toast'); t.textContent = msg; t.style.display = 'block'; setTimeout(function () { t.style.display = 'none'; }, 4500); }
+
+async function post(url, body) {
+  try {
+    var r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', 'x-board': '1' }, body: JSON.stringify(body) });
+    var j = await r.json();
+    toast(j.ok ? (/^✓/.test(j.message) ? '' : '✓ ') + j.message : '✕ ' + (j.error || 'Erreur'));
+    poll();
+  } catch (e) { toast('✕ ' + e.message); }
+}
+
+function openGate(squadId, g) {
+  var q = S.squads.filter(function (s) { return s.id === squadId; })[0], x = q.gates[g];
+  var auto = x.auto.map(function (c) {
+    return '<li>' + (c.unknown ? '<span style="color:var(--muted)">·</span> ' : (c.ok ? '<span style="color:var(--teal)">✓</span> ' : '<span style="color:var(--rose)">✕</span> ')) + esc(c.id) + ' ' + esc(c.label) + (c.unknown ? ' <small style="color:var(--muted)">(à voir sur le poste de la squad : npm run gate-check -- ' + g + ')</small>' : '') + '</li>';
+  }).join('');
+  var human = x.human.map(function (h) { return '<li>• ' + esc(h) + '</li>'; }).join('');
+  var name = ''; try { name = localStorage.getItem('keeper') || ''; } catch (e) {}
+  $('dform').innerHTML = '<h3>' + g + ' · ' + esc(x.name) + '</h3><p class="meta">' + esc(q.label) + ' · créneau ' + esc(x.slot) + ' · gate keeper ' + esc(x.keeper) + '</p>'
+    + '<p class="sub">Contrôles automatiques vus depuis le Nexus</p><ul>' + auto + '</ul>'
+    + '<p class="sub">À juger par le gate keeper</p><ul>' + human + '</ul>'
+    + '<div class="verd"><label><input type="radio" name="v" value="GO" checked>GO</label><label class="nogo"><input type="radio" name="v" value="NO-GO">NO-GO</label></div>'
+    + '<label for="kn">Gate keeper</label><input type="text" id="kn" value="' + esc(name) + '" placeholder="prénom nom" required>'
+    + '<label for="kt">Motif (le critère qui manque, en cas de NO-GO)</label><textarea id="kt" rows="2"></textarea>'
+    + '<div style="display:flex;gap:10px;margin-top:14px"><button class="act" type="button" id="ok">Enregistrer</button><button class="act sec" type="button" id="cancel">Annuler</button></div>';
+  $('dlg').showModal();
+  $('cancel').onclick = function () { $('dlg').close(); };
+  $('ok').onclick = function () {
+    var who = $('kn').value.trim();
+    if (!who) { $('kn').focus(); return; }
+    try { localStorage.setItem('keeper', who); } catch (e) {}
+    var v = document.querySelector('input[name=v]:checked').value;
+    $('dlg').close();
+    post('/api/gate', { squad: squadId, gate: g, verdict: v, keeper: who, note: $('kt').value });
+  };
+}
+
+// Infobulles : une seule boîte, placée près de l'élément survolé, gardée dans l'écran.
+(function () {
+  var box = document.createElement('div'); box.className = 'tipbox'; box.setAttribute('role', 'tooltip'); box.hidden = true; document.body.appendChild(box);
+  var cur = null;
+  function place(el) {
+    var r = el.getBoundingClientRect(), m = 10;
+    box.style.left = '0px'; box.style.top = '0px';
+    var w = box.offsetWidth, h = box.offsetHeight;
+    var left = Math.min(Math.max(m, r.left + r.width / 2 - w / 2), window.innerWidth - w - m);
+    var top = r.bottom + 8; if (top + h > window.innerHeight - m) top = Math.max(m, r.top - h - 8);
+    box.style.left = left + 'px'; box.style.top = top + 'px';
+  }
+  function show(el) { cur = el; box.innerHTML = el.getAttribute('data-tip'); box.hidden = false; place(el); }
+  function hide() { cur = null; box.hidden = true; }
+  // mousemove plutôt que mouseover : l'écran se redessine toutes les 3 secondes.
+  document.addEventListener('mousemove', function (e) { var el = e.target.closest && e.target.closest('[data-tip]'); if (el) { if (el !== cur || !document.contains(cur)) show(el); } else if (cur) hide(); });
+  document.addEventListener('focusin', function (e) { var el = e.target.closest('[data-tip]'); if (el) show(el); });
+  document.addEventListener('focusout', hide);
+  document.addEventListener('touchstart', function (e) { var el = e.target.closest('[data-tip]'); if (el && !el.matches('button')) show(el); else hide(); }, { passive: true });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') hide(); });
+  window.addEventListener('scroll', function () { if (cur && document.contains(cur)) place(cur); else hide(); }, { passive: true });
+})();
+
+poll(); setInterval(poll, 3000); setInterval(tick, 1000);
+</script>
+</body>
+</html>

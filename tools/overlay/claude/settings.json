@@ -1,0 +1,61 @@
+{
+  "outputStyle": "coach-pdlc",
+  "permissions": {
+    "allow": [
+      "Bash(npm test)",
+      "Bash(npm test *)",
+      "Bash(npm run test:coverage)",
+      "Bash(npm run lint)",
+      "Bash(npm run typecheck)",
+      "Bash(npm run scan)",
+      "Bash(npm run context)",
+      "Bash(npm run gate-check *)",
+      "Bash(npm run observe)",
+      "Bash(npm install)",
+      "Bash(npm run build)",
+      "Bash(npm run deploy)",
+      "Bash(node ../context-nexus/tools/context-assemble.mjs *)",
+      "Bash(node ../context-nexus/tools/hackathon-status.mjs *)",
+      "Bash(node ../context-nexus/tools/retour.mjs *)",
+      "Bash(git -C ../context-nexus pull)",
+      "Bash(git -C ../context-nexus pull *)",
+      "Bash(git -C ../context-nexus status *)",
+      "Bash(git -C ../context-nexus log *)",
+      "Bash(git -C ../context-nexus diff *)",
+      "Bash(git -C ../context-nexus show *)"
+    ],
+    "deny": [
+      "Bash(npm run flag *)"
+    ],
+    "additionalDirectories": [
+      "../context-nexus"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.mjs\""
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard.mjs\""
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "node .claude/statusline.mjs"
+  }
+}

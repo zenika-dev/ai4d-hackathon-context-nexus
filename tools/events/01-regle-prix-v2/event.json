@@ -1,0 +1,17 @@
+{
+  "id": "01-regle-prix-v2",
+  "title": "Le plafond de prix passe d'un montant à un pourcentage",
+  "say": "Direction Revenu Annexe : « Le plafond du supplément ne sera plus un montant fixe : ce sera un pourcentage du tarif de la nuit de l'hôtel. »",
+  "announce": "regle-prix passe en 2.0.0 (rupture pour Offre et Paiement) : le contrat de la squad Prix change, ses consommateurs doivent réaligner.",
+  "artifact": "teams/squad-2-prix/contracts/regle-prix.md",
+  "minCurrentVersion": "1.0.0",
+  "newFiles": [
+    {
+      "from": "tarifs-nuit-pilotes.md",
+      "to": "programme/late-checkout/knowledge/tarifs-nuit-pilotes.md"
+    }
+  ],
+  "appendFrom": "changement.md",
+  "commitMessage": "animation: regle-prix 2.0.0, le plafond devient un pourcentage (décision Direction Revenu Annexe)",
+  "newVersion": "2.0.0"
+}
