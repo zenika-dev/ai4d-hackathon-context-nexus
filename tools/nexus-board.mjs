@@ -18,7 +18,7 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import { TOOLS_DIR, DEFAULT_NEXUS, DEFAULT_TZ, zonedParts, zonedMs, minutesOfDay, loadConfig, loadNexus, squadOf, checkPins, cmpVersion, major, readJournal, isoNow } from './lib/nexus.mjs';
-import { computeStatus, blockAt, agendaFor } from './lib/status.mjs';
+import { computeStatus, blockAt, agendaFor, PHASES, ACCOUNTABLE } from './lib/status.mjs';
 import { applyEvent } from './event.mjs';
 
 function parseArgs(argv) {
@@ -125,7 +125,7 @@ function buildState(ctx) {
       if (v) state = v.verdict === 'GO' ? 'go' : 'nogo';
       else if (nowMin >= slotMin) state = 'due';
       else if (nowMin >= slotMin - 10) state = 'soon';
-      gates[g] = { slot: cfg.slots[g], state, verdict: v, name: config.gates[g].name, keeper: config.gates[g].keeper, auto: st.gates[g].auto, human: st.gates[g].human };
+      gates[g] = { slot: cfg.slots[g], state, verdict: v, name: config.gates[g].name, keeper: config.gates[g].keeper, accountable: ACCOUNTABLE[g] || null, auto: st.gates[g].auto, human: st.gates[g].human };
     }
     const next = st.nextGate;
     return {
@@ -184,9 +184,9 @@ function buildState(ctx) {
     if (!ctx.meCache || Date.now() - ctx.meCache.at > 10000) {
       const m = safe(() => computeStatus({ nexus: ctx.local || nexus, starter: ctx.starter || null, squad: ctx.squad, config, now: nowDate }), null);
       ctx.meCache = { at: Date.now(), me: m && {
-        id: ctx.squad, label: m.label, number: m.number, volet: m.volet, phase: m.phase, nextGate: m.nextGate,
-        gate: m.nextGate ? { id: m.nextGate, name: m.gates[m.nextGate].name, slot: m.gates[m.nextGate].slot, keeper: m.gates[m.nextGate].keeper, auto: m.gates[m.nextGate].auto, human: m.gates[m.nextGate].human } : null,
-        step: { label: m.step.label, hat: m.step.hat, say: m.step.say, humanDo: m.step.humanDo, why: m.step.why, human: m.step.human, learn: m.step.learn, cue: m.step.cue, hatDoes: m.step.hatDoes },
+        id: ctx.squad, label: m.label, number: m.number, volet: m.volet, phase: m.phase, nextGate: m.nextGate, phaseInfo: PHASES[m.phase] || null,
+        gate: m.nextGate ? { id: m.nextGate, name: m.gates[m.nextGate].name, slot: m.gates[m.nextGate].slot, keeper: m.gates[m.nextGate].keeper, accountable: ACCOUNTABLE[m.nextGate] || null, auto: m.gates[m.nextGate].auto, human: m.gates[m.nextGate].human } : null,
+        step: { id: m.step.id, items: m.step.items || null, label: m.step.label, hat: m.step.hat, say: m.step.say, humanDo: m.step.humanDo, why: m.step.why, human: m.step.human, learn: m.step.learn, cue: m.step.cue, hatDoes: m.step.hatDoes, hatDef: m.step.hatDef, accor: m.step.accor },
         pinIssues: m.pinIssues.map(n => ({ path: n.path, pinned: n.pinned, current: n.current })), unpublished: m.unpublished,
       } };
     }

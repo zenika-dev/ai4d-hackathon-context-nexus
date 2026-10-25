@@ -5,7 +5,8 @@
 //
 //   node ../context-nexus/tools/retour.mjs G1 --clarte claire|partielle|floue [--flou "G1-5 …"] [--note "…"]
 //   node ../context-nexus/tools/retour.mjs FIN --rythme oui|en-partie|non --cadrage … --gates … --criteres …
-//        --responsabilites … --contexte … --8h … [--changer "…"] [--garder "…"]
+//        --responsabilites … --contexte … --8h … [--changer "…"] [--garder "…"] [--terrain "…"]
+//   --terrain : le moment où la squad s'est dit « ce n'est pas comme chez nous » (écart avec le terrain Accor).
 
 import { existsSync, readFileSync, writeFileSync, appendFileSync, mkdirSync } from 'node:fs';
 import { join, resolve, basename } from 'node:path';
@@ -37,6 +38,7 @@ if (/^G[1-6]$/.test(kind)) {
   row = [isoNow(), kind, v ? v.verdict : '—', `critères : ${clarte}`, opt('flou') || '—', opt('note') || '—'];
 } else if (kind === 'FIN') {
   const answers = FIN.map(k => { const a = opt(k); if (!ECHELLE.includes(a)) fail(`--${k} : ${ECHELLE.join(', ')}`); return `${k} : ${a}`; });
+  if (opt('terrain')) answers.push(`pas comme chez nous : ${opt('terrain')}`);
   row = [isoNow(), 'FIN', '—', answers.join(' · '), opt('changer') || '—', opt('garder') || '—'];
 } else {
   fail('Usage : retour.mjs G1 --clarte claire|partielle|floue [--flou "…"] [--note "…"]   ou   retour.mjs FIN --rythme … (voir l\'en-tête)');

@@ -7,7 +7,8 @@
 //   node tools/repetition/simuler.mjs gate G1 --pour squad-2-prix      # GO des autres squads à une gate (écran commun vivant)
 //   node tools/repetition/simuler.mjs realigner --pour squad-2-prix    # après l'événement : les autres squads ré-épinglent et republient
 //   node tools/repetition/simuler.mjs etat                             # versions et épinglages de tous les contrats
-//   node tools/repetition/simuler.mjs auto --pour squad-2-prix         # pilote automatique : les autres squads suivent votre rythme
+//   node tools/repetition/simuler.mjs auto --pour squad-2-prix         # pilote automatique : les autres squads publient leurs livrables à votre rythme ;
+//                                                                      # leurs verdicts, c'est vous (écran des gate keepers), sauf avec --verdicts auto
 //
 // --pour <squad> : la squad que vous jouez ; elle n'est jamais touchée. --nexus <dossier> : le clone (par défaut, ce dépôt).
 // --no-push : commits locaux seulement.
@@ -33,6 +34,7 @@ function parseArgs(argv) {
     else if (k === '--no-push') a.push = false;
     else if (k === '--toutes') a.toutes = Number(argv[++i]);
     else if (k === '--delai') a.delai = Number(argv[++i]);
+    else if (k === '--verdicts') a.verdicts = argv[++i];
     else if (k === '--help' || k === '-h') a.help = true;
     else a._.push(k);
   }
@@ -49,6 +51,7 @@ const rel = (squad, name) => `teams/${squad}/contracts/${name}.md`;
 const read = p => readFileSync(join(nexus, p), 'utf8');
 const versionOf = p => (existsSync(join(nexus, p)) ? parseFrontmatter(read(p))?.meta.version : null);
 const others = () => Object.keys(CONTRACTS).filter(s => s !== args.pour);
+const majorOf = p => Number(String(versionOf(p) || '0').split('.')[0]);
 const num = squad => config.squads[squad].number;
 
 function pull() { try { git('pull', '--rebase', '--autostash', '-q'); } catch { /* hors ligne : on continue en local */ } }
@@ -119,10 +122,61 @@ function realignOnce() {
   return changed;
 }
 
+// ---------- livrables simulés : une squad simulée ne passe jamais une gate sans avoir produit ce qu'elle exige ----------
+
+const label = squad => config.squads[squad].label;
+const ownerOf = squad => `${squad.replace(/^squad-\d-/, '')}.owner-simule`;
+const fm = (o) => `---\n${Object.entries(o).map(([k, v]) => `${k}: ${Array.isArray(v) ? `[${v.join(', ')}]` : v}`).join('\n')}\n---\n`;
+
+function consumedBy(squad) {
+  const deps = new Set();
+  for (const name of CONTRACTS[squad]) {
+    const p = rel(squad, name);
+    if (!existsSync(join(nexus, p))) continue;
+    for (const m of read(p).matchAll(/((?:teams|programme|org)\/[\w./-]+\.md)@\d+\.\d+\.\d+/g)) if (!m[1].startsWith(`teams/${squad}/`)) deps.add(m[1]);
+  }
+  return [...deps].map(d => `${d}@${versionOf(d) || '1.0.0'}`);
+}
+
+const DELIVERABLES = {
+  G1: squad => [[`teams/${squad}/intent/business-intent.md`, () => fm({
+    id: `${squad}/business-intent`, register: 'intent', level: 'team', owner: ownerOf(squad), status: 'active', version: '1.0.0',
+    'last-validated': today, 'consumption-mode': 'context-injection',
+    consumes: ['programme/late-checkout/knowledge/brief.md', 'programme/late-checkout/knowledge/regles-metier.md', 'programme/late-checkout/knowledge/decisions-deja-prises.md'].map(d => `${d}@${versionOf(d) || '1.0.0'}`),
+  }) + `\n# Business Intent Spec · ${label(squad)} (simulée pour la répétition)\n\n> Écrite par la simulation : une vraie squad la rédige avec Claude, la Direction Revenu Annexe et ses propres décisions.\n\n## 1. Problème\nLe late check-out est accordé à la réception au cas par cas : revenu perdu, aucune trace. [Nexus : brief.md]\n\n## 2. Utilisateurs et parties prenantes\nClients avec une réservation confirmée, réception, Direction Revenu Annexe, les autres squads. [Nexus : brief.md]\n\n## 3. Critère de succès chiffré\nTaux d'attachement ≥ 6 % des réservations éligibles à 30 jours, sur les 5 hôtels pilotes. [Direction Revenu Annexe, ${today}] [Décision de la squad : 6 %]\n\n## 4. Données\nRéservations et occupation prévue : disponibles (données du starter). Réservations éligibles par jour : à confirmer (expert Data).\n\n## 5. Priorité et owner\nPriorité du trimestre pour la Direction Revenu Annexe. Owner : ${ownerOf(squad)}. Hors périmètre : autres services annexes.\n\n## Réutilisation\nAucune solution existante : l'ancien processus est la réception. [Nexus : decisions-deja-prises.md]\n`]],
+  G2: squad => [[`teams/${squad}/intent/specs/${squad}-001.md`, () => fm({
+    id: `${squad}/spec-001`, register: 'intent', level: 'team', owner: ownerOf(squad), status: 'active', version: '1.0.0',
+    'last-validated': today, 'consumption-mode': 'context-injection', source: `starter-${squad}/specs/001/spec.md`,
+    consumes: [`teams/${squad}/intent/business-intent.md@1.0.0`, ...consumedBy(squad)],
+  }) + `\n# Solution Design Spec · ${label(squad)} (simulée pour la répétition)\n\nSpec fonctionnelle, plan et tâches produits avec Spec Kit dans le starter de la squad ; seule la version publiée est simulée ici.\n`]],
+  G3: () => [],
+  G4: squad => [
+    [`teams/${squad}/operations/runbook.md`, () => fm({ id: `${squad}/runbook`, register: 'process', level: 'team', owner: ownerOf(squad), status: 'active', version: '1.0.0', 'last-validated': today, 'consumption-mode': 'rag' })
+      + `\n# Runtime Spec · ${label(squad)} (simulée pour la répétition)\n\n## Owner d'exploitation\n${ownerOf(squad)}\n\n## Rollback\nDésactiver le flag du volet (npm run flag -- <flag> off --reason \"…\") ; décision du Decision Guarantor.\n\n## Coût IA\nRelevé dans Claude par la squad, lu avec ses gates passées.\n`],
+    [`teams/${squad}/operations/flags-journal.md`, () => `# Journal des flags · ${squad}\n\n| Date | Flag | État | Qui | Pourquoi |\n|---|---|---|---|---|\n| ${isoNow()} | lco_${squad.replace(/^squad-\d-/, '')} | on | ${ownerOf(squad)} | activation du pilote (simulée) |\n`],
+  ],
+};
+
+// Publie ce qui manque pour la gate g (et les précédentes) ; renvoie vrai si quelque chose a été publié.
+function produce(squad, g) {
+  const order = ['G1', 'G2', 'G3', 'G4'];
+  for (const gg of order.slice(0, order.indexOf(g) + 1)) {
+    if (gg === 'G2' && CONTRACTS[squad].some(n => majorOf(rel(squad, n)) < 1)) return publishV1(squad, CONTRACTS[squad]);
+    const files = DELIVERABLES[gg](squad).filter(([p]) => !existsSync(join(nexus, p)));
+    if (!files.length) continue;
+    for (const [p, make] of files) { mkdirSync(join(nexus, p, '..'), { recursive: true }); writeFileSync(join(nexus, p), make()); }
+    publish(squad, files.map(([p]) => p), `publie ses livrables de ${gg} (simulation)`);
+    console.log(`✓ ${label(squad)} publie ses livrables de ${gg} : ${files.map(([p]) => p.split('/').pop()).join(', ')}`);
+    return true;
+  }
+  return false;
+}
+
 function gate(g) {
   if (!config.gates[g]) throw new Error(`Gate inconnue : ${g} (G1 à G4)`);
   for (const squad of others()) {
     if (gateVerdicts(nexus, squad)[g]?.verdict === 'GO') continue;
+    if (produce(squad, g)) continue;   // d'abord les livrables, le verdict au tour suivant
     const p = `teams/${squad}/operations/gates-journal.md`;
     const file = join(nexus, p);
     mkdirSync(join(nexus, 'teams', squad, 'operations'), { recursive: true });
@@ -150,7 +204,6 @@ function etat() {
 // les vôtres, publient M2 puis leurs v1 après votre M1, et se réalignent un peu après chaque changement de contrat
 // (le délai laisse le temps de voir le rouge et l'ambre sur l'écran commun).
 
-const majorOf = p => Number(String(versionOf(p) || '0').split('.')[0]);
 const hhmm = () => new Intl.DateTimeFormat('fr-FR', { timeZone: config.timezone || 'Europe/Paris', hour: '2-digit', minute: '2-digit' }).format(new Date());
 
 function lastHumanCommit() {
@@ -165,8 +218,14 @@ function autoTick() {
   pull();
   const me = args.pour;
   const mine = gateVerdicts(nexus, me);
-  // 1. Gates : les autres squads ne prennent jamais d'avance sur vous.
-  for (const g of ['G1', 'G2', 'G3', 'G4'])
+  // 0. Réparation : une gate déjà accordée à une squad simulée doit avoir ses livrables.
+  for (const s of others()) for (const g of ['G1', 'G2', 'G3', 'G4'])
+    if (gateVerdicts(nexus, s)[g]?.verdict === 'GO' && produce(s, g)) return;
+  // 1. Livrables : quand votre squad atteint une gate, les autres squads publient les leurs. Le verdict reste au gate keeper
+  //    (vous, sur l'écran des gate keepers), comme le jour J ; --verdicts auto le donne à votre place.
+  const reached = ['G1', 'G2', 'G3', 'G4'].filter(g => mine[g]);
+  for (const g of reached) for (const s of others()) if (produce(s, g)) return;
+  if (args.verdicts === 'auto') for (const g of reached)
     if (mine[g]?.verdict === 'GO' && others().some(s => gateVerdicts(nexus, s)[g]?.verdict !== 'GO')) return gate(g);
   // 2. Jalons et contrats v1, une squad à la fois.
   const prix = rel('squad-2-prix', 'regle-prix'), m1 = majorOf(prix) >= 1;

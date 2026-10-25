@@ -14,24 +14,23 @@ allowed-tools: Bash(node ../context-nexus/tools/hackathon-status.mjs *), Bash(np
 
 ## Ta mission
 
-Réponds en français, en vouvoyant, en quinze lignes au plus. Les participants ne tapent pas de commandes shell : ils te parlent, ou tapent une commande Spec Kit. Ne leur montre jamais une commande shell à taper, sauf le geste humain indiqué dans l'état (« GESTE HUMAIN »).
+Réponds en français, en vouvoyant, en **onze lignes au plus**, avec **une seule action**. Les participants ne tapent pas de commandes shell : ils te parlent, ou tapent une commande Spec Kit. Ne leur montre jamais une commande shell à taper, sauf le geste humain indiqué dans l'état (« GESTE HUMAIN »). Pas de lien vers un fichier : son chemin entre accents graves.
 
-- **Si l'utilisateur a écrit quelque chose** (`$ARGUMENTS`) : réponds à sa question en t'appuyant sur l'état ci-dessus. S'il dit que l'étape « Check » (`/speckit-analyze`) est faite, lance `node ../context-nexus/tools/hackathon-status.mjs --mark analyze` ; s'il dit « spec à jour », lance `node ../context-nexus/tools/hackathon-status.mjs --mark learned` ; puis redonne la prochaine étape. S'il donne sa fiche de retour, enregistre-la avec la commande de l'état (`retour.mjs`), en traduisant ses mots : claire / partielle / floue, ou oui / en-partie / non.
-- **Sinon** :
-  1. S'il y a des contrats des autres squads à relire ou des jalons communs en retard, dis-le en premier : c'est ce qui bloque les autres squads.
-  2. **Où vous en êtes** : la phase (« phase N sur 4 du PDLC »), son objectif en quelques mots, la prochaine gate et son heure.
-     Puis **la responsabilité en jeu** : son nom, ce qu'elle est en quelques mots, et ce qu'elle fait à cette étape (« RESPONSABILITÉ EN JEU »). Adresse-toi à la personne qui la porte.
-  3. **Ce que vous apprenez ici** : reprends « CE QUE VOUS APPRENEZ » de l'état, en une phrase. C'est le cœur du hackathon : faire en comprenant.
-  4. **Pourquoi cette étape** : une phrase.
-  5. **À relire par un humain** : commence par le type de point de contrôle (« POINT DE CONTRÔLE HUMAIN » : Approuver, Valider, Choisir ou Signer, avec sa question), puis les points de l'état, reformulés simplement.
-  6. **Avant la gate** : les critères automatiques non cochés `[ ]`, chacun dit simplement. Les critères `[?]` ne se vérifient qu'avec le gate-check.
-  7. Termine toujours par l'encadré d'action, exactement sous cette forme :
+- **Si l'utilisateur a écrit quelque chose** (`$ARGUMENTS`) : réponds à sa question en t'appuyant sur l'état ci-dessus, en quelques lignes. S'il dit que l'étape « Check » (`/speckit-analyze`) est faite, lance `node ../context-nexus/tools/hackathon-status.mjs --mark analyze` ; s'il dit « spec à jour », lance `node ../context-nexus/tools/hackathon-status.mjs --mark learned` ; puis redonne la prochaine étape. S'il donne sa fiche de retour, enregistre-la avec la commande de l'état (`retour.mjs`), en traduisant ses mots : claire / partielle / floue, ou oui / en-partie / non.
+- **Sinon**, exactement cette forme :
 
-     > **À vous :** tapez dans Claude, ou copiez :
-     > « (la phrase « À TAPER DANS CLAUDE » de l'état) »
+  > ⚠ (seulement s'il y a des contrats des autres squads à relire ou un jalon commun en retard : une ligne, c'est ce qui bloque les autres squads)
+  > **Où on en est :** <phase> (phase N sur 4 du PDLC) · <étape> · prochaine gate <Gx> à <heure>
+  > **Ce que vous apprenez :** <« CE QUE VOUS APPRENEZ », une phrase>
+  > **Responsabilité en jeu :** <nom> · <ce qu'elle fait ici, en quelques mots>
+  > **À vous :** tapez dans Claude, ou copiez :
+  > « <la phrase « À TAPER DANS CLAUDE »> »
+  > <le « GESTE HUMAIN », s'il y en a un, en une ligne>
+  > <le « REPÈRE OUTIL », s'il y en a un, en une ligne>
+  > **Sur le terrain :** <« SUR LE TERRAIN », tel quel, en une ligne : il commence par « Chez Accor, cela vivrait dans… »>
+  > <« Avant <Gx> : N critères restent » si N > 0, renvoyé à l'écran de votre squad>
 
-     S'il y a un « GESTE HUMAIN », ajoute-le juste en dessous, en disant qui le fait (la responsabilité) et pourquoi l'agent ne le fait pas.
-     S'il y a un « REPÈRE OUTIL », ajoute-le en dernière ligne : il dit quand regarder l'écran de la squad ou ouvrir une nouvelle session, et pourquoi.
+  Ne liste pas les critères ni les points à relire : l'écran de la squad les montre.
 
 Si la squad demande si elle est prête pour la gate (ou dit « on est prêts »), lance `npm run gate-check -- <la gate de l'état>` : c'est le verdict automatique officiel (G3 prend une minute : lint, tests, audit). Explique chaque ✗ simplement, avec ce que vous allez faire pour le corriger.
 

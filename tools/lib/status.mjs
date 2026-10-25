@@ -299,14 +299,14 @@ function withSay(step, c) {
     react: [c.pinIssues[0] && !c.pinIssues[0].path.startsWith('teams/') ? `${c.pinIssues[0].path.split('/').pop()} a changé dans le Nexus : montre-nous le changement, ce qu'il touche chez nous, et mets à jour notre épinglage` : 'Un contrat d\'une autre squad a changé : montre-nous le changement et ce qu\'il touche chez nous'],
     bonus: ['Préparons le bonus : le verdict G5 et le retrait G6, en version courte'],
     gate: [`Vérifie qu'on passe la gate ${c.nextGate}`],
-    'intent-copy': ['Aide-nous à écrire notre Business Intent Spec : copie le gabarit dans notre dossier, remplis tout ce que le Context Nexus permet de remplir en citant le fichier, puis fais-nous trois listes courtes : ce qu\'il faut demander à la Direction Revenu Annexe, ce que nous devons décider, ce qui reste à confirmer'],
-    'intent-fill': ['Voici les réponses de la Direction Revenu Annexe et nos décisions : (collez-les). Complète la Business Intent Spec avec l\'étiquette de source de chaque phrase, et dis-nous ce qui manque encore'],
-    'intent-sign': ['Ouvre-nous la Business Intent Spec dans l\'éditeur',
-      'Relisez les 5 champs ensemble. Puis, dans l\'en-tête du fichier, remplacez « status: draft » par « status: active » et mettez votre prénom.nom dans « owner » : c\'est votre signature, l\'agent ne la met jamais à votre place.'],
+    'intent-copy': ['Aide-nous à écrire notre Business Intent Spec : copie le gabarit dans notre dossier, remplis ce que le Context Nexus permet de remplir en citant le fichier, puis donne-nous les questions à poser à la Direction Revenu Annexe'],
+    'intent-fill': ['Voici les réponses de la Direction Revenu Annexe : (collez-les). Complète la Business Intent Spec avec, puis dis-nous la prochaine décision qui nous revient'],
+    'intent-sign': ['Nous avons relu la Business Intent Spec ensemble. Je la signe en tant que (prénom nom), owner de l\'intention.',
+      'Avant d\'écrire cette phrase, relisez les 5 champs à voix haute en squad. C\'est cette phrase, écrite par la personne nommée, qui l\'engage : l\'agent ne signe jamais de lui-même.'],
     publish: ['Publie nos changements dans le Context Nexus'],
     'spec-publish': ['Publie notre spec dans le Context Nexus, avec son en-tête et nos épinglages'],
     'contract-v1': ['Prépare notre contrat v1 en suivant la checklist, puis montre-le-nous pour qu\'on le relise',
-      'Relisez le contrat ; dans son en-tête, passez « status » à « active » : c\'est votre signature.'],
+      'Une fois le contrat relu, la personne qui en répond écrit : « Je signe le contrat en tant que (prénom nom) ». C\'est sa signature.'],
     tests: ['Écris un test par critère d\'acceptance, nommé d\'après lui, puis lance les tests'],
     sign: ['Prépare le commit du code de débit : notre Decision Guarantor va le signer',
       'Le Decision Guarantor relit le code de débit, puis tape lui-même dans le terminal : git commit -s -m "…"'],
@@ -315,7 +315,7 @@ function withSay(step, c) {
       `Ensuite, un humain active la fonctionnalité en tapant lui-même dans le terminal : npm run flag -- ${flag} on --reason "pourquoi maintenant"`],
     'kpi-publish': [`Publie notre contrat ${step.label.replace(/^Publier | en v1$/g, '')} en v1`],
     retour: [`Fiche de retour ${step.gate} : pour nous, les critères de la gate étaient (clairs / en partie clairs / flous) ; le critère le moins clair : (facultatif)`],
-    'retour-final': ['Fiche de retour de fin de session : (pour chaque point, oui / en partie / non) rythme tenable ; cadrage du début utile ; gates de 5 minutes adaptées ; critères des gates clairs ; responsabilités claires ; contexte partagé utile ; je saurai expliquer ce déroulé à mon équipe au 8 h. À changer : … À garder : …'],
+    'retour-final': ['Fiche de retour de fin de session : (pour chaque point, oui / en partie / non) rythme tenable ; cadrage du début utile ; gates de 5 minutes adaptées ; critères des gates clairs ; responsabilités claires ; contexte partagé utile ; je saurai expliquer ce déroulé à mon équipe au 8 h. À changer : … À garder : … Le moment où l\'on s\'est dit « ce n\'est pas comme chez nous » : …'],
     nogo: [`Le gate keeper a dit NO-GO à ${c.nextGate}${step.note ? ` : « ${step.note} »` : ''}. Aide-nous à corriger ce point, publie la correction, puis vérifie qu'on passe la gate`],
     'spec-learn': ['Compare notre code à la spec : liste les écarts et les composants inventés ou adaptés, mets la spec à jour, puis montre-nous ce qui a changé'],
     cost: ['Ajoute à notre runbook le coût IA de l\'incrément : voici la consommation affichée par Claude : (collez-la)',
@@ -328,8 +328,49 @@ function withSay(step, c) {
   if (step.id === 'retour') cue = step.verdict === 'GO'
     ? `Convention du TOM : le livrable d'une phase est l'entrée de la suivante. ${HANDOVER[step.gate] || ''} Après cette fiche, ${NEW_SESSION} : la nouvelle phase repart d'un contexte propre et du brief à jour, et coûte moins.`
     : `Sur ${SCREEN}, la gate est rouge avec son motif : c'est la prochaine chose à corriger.`;
-  return { ...base, learn: L[0] || null, cue, hatDoes: HAT_DOES[step.id] || null, hatDef: hatDefinition(step.hat, c.config), checkpoint: CHECKPOINT[step.id] || null };
+  const a = ACCOR[step.id];
+  const accor = typeof a === 'function' ? a(c) : a;
+  return { ...base, learn: L[0] || null, cue, hatDoes: HAT_DOES[step.id] || null, hatDef: hatDefinition(step.hat, c.config), checkpoint: CHECKPOINT[step.id] || null, accor: accor ? `Chez Accor, ${accor}` : null };
 }
+
+// Le pont avec le terrain : où l'étape vivrait chez Accor, d'après le TOM V1.0 (outils en place ou cible).
+// Le hackathon simule tout dans le Context Nexus ; cette ligne dit où le participant le retrouvera dans son quotidien.
+const GATE_ACCOR = {
+  G1: 'cela vivrait au Product weekly du vendredi : le ticket du besoin passe « Ready to spec » dans Jira ; accountable : le Product Manager.',
+  G2: 'cela vivrait au Sprint Planning : DoR confirmée, owner du task brief nommé ; accountable : PO, UX et Tech Lead.',
+  G3: 'cela vivrait dans la merge request GitLab : GitLab CI, SonarQube, Semgrep, GitLeaks et Checkmarx y tournent à chaque MR ; accountable : développeurs et QA, avec le CAB en périmètre PCI.',
+  G4: 'cela vivrait dans ServiceNow (qualification des tests, change) et dans la trace de chaque bascule de flag ; accountable : QA et équipes POE.',
+};
+const ACCOR = {
+  assemble: 'cela vivrait dans le Context Nexus et son Assembler (cible du TOM), avec GitLab, Jira et ServiceNow déjà branchés aux agents par MCP.',
+  'own-changed': 'cela vivrait dans GitLab : la merge request qui change un contrat déclenche la revue des directives qu\'il touche ; un désaccord remonte à l\'Architecture biweekly.',
+  react: 'cela vivrait dans GitLab : la merge request qui change un contrat déclenche la revue des directives qu\'il touche ; un désaccord remonte à l\'Architecture biweekly.',
+  'intent-copy': 'cela vivrait dans le Discovery Backlog (Jira) : le besoin y entre comme ticket, la Business Intent Spec le cadre, et la priorité se tranche au Product weekly (PO, Tech Lead, Product Designer, DSM).',
+  'intent-fill': 'cela vivrait dans le Discovery Backlog (Jira) : les chiffres viennent des échanges avec le métier, et la priorité se tranche au Product weekly (PO, Tech Lead, Product Designer, DSM).',
+  'intent-sign': 'cela vivrait dans le ticket Jira du besoin : le Product Manager, accountable de G1, l\'engage avant le passage « Ready to spec ».',
+  publish: 'cela vivrait dans une merge request sur le dépôt du Context Nexus : ce qui n\'y est pas fusionné n\'existe pas pour les agents ni pour les autres équipes.',
+  gate: c => GATE_ACCOR[c.nextGate] || null,
+  nogo: 'cela vivrait dans le retour du ticket à l\'étape concernée, critère manquant nommé ; un désaccord remonte au rituel d\'escalade de la gate (Product weekly, Architecture biweekly ou plénière mensuelle).',
+  constitution: 'cela vivrait dans les instructions d\'agent (les non-négociables de l\'organisation) et dans les règles de l\'équipe, versionnées dans son dépôt.',
+  specify: 'cela vivrait dans la Feature spec versionnée (registre Purpose), à laquelle le ticket Jira est rattaché : à la création du ticket, le TOM vérifie que la spec existe et cite ses contrats.',
+  clarify: 'cela vivrait dans le Refinement (backlog grooming) de la feature team : les questions ouvertes s\'y règlent avant le Sprint Planning.',
+  plan: 'cela vivrait dans la Solution Design Spec et les ADR ; un choix qui engage d\'autres équipes passe à l\'Architecture biweekly.',
+  tasks: 'cela vivrait dans les user stories et stories techniques de Jira, chacune rattachée à la spec et à son task brief.',
+  analyze: 'cela vivrait dans le contrôle de la Definition of Ready, avant le Sprint Planning : spec, plan et stories cohérents, sinon pas de build.',
+  'spec-publish': 'cela vivrait dans le registre Purpose du Context Nexus de l\'équipe, avec ses épinglages : c\'est ce que l\'Assembler injecte aux agents.',
+  'contract-v1': 'cela vivrait dans le registre Contracts du Context Nexus (schéma, exemples, mock), fusionné par merge request et consommé par les autres équipes à une version épinglée.',
+  implement: 'cela vivrait dans Claude Code (AccorGPT) sur une branche GitLab, une merge request par incrément, avec le coût en tokens suivi par task brief dans Langfuse.',
+  tests: 'cela vivrait dans les tests lancés par GitLab CI, et dans XRay pour la campagne de test du QA (Playwright pour le bout en bout).',
+  'spec-learn': 'cela vivrait dans la même merge request que le code : la spec mise à jour fait partie de ce que le Develop remet au Deploy.',
+  sign: 'cela vivrait dans l\'approbation nominative de la merge request par un humain authentifié, exigée en périmètre PCI et au CAB.',
+  runbook: 'cela vivrait dans le registre Process (runbooks exécutables), à côté des procédures de déploiement et de l\'historique d\'incidents.',
+  flag: 'cela vivrait dans l\'outil de feature flags de l\'équipe, chaque bascule tracée (qui, quand, quel périmètre). Selon le TOM, ce n\'est tracé nulle part aujourd\'hui : G4 ne peut pas encore s\'y appliquer.',
+  cost: 'cela vivrait dans Langfuse (coût par task brief) et dans les tableaux FinOps de la passerelle accor.gpt (LiteLLM) ; ici, vous le relevez à la main.',
+  'kpi-publish': 'cela vivrait dans les tableaux de bord KPI et les alertes (Splunk pour l\'observabilité), que les équipes Data et le PM lisent pour le verdict G5.',
+  bonus: 'cela vivrait au Product weekly : le PM et les équipes Data y rendent le verdict de valeur (G5) ; un retrait repart dans le Discovery Backlog.',
+  retour: 'cela vivrait dans le process backlog du TOM : les constats sur la façon de livrer y sont routés plutôt que perdus.',
+  'retour-final': 'cela vivrait dans le process backlog du TOM : les constats sur la façon de livrer y sont routés plutôt que perdus.',
+};
 
 // Les quatre responsabilités du TOM jouées par la squad : personne ne les connaît, on les apprend en les exerçant.
 // À chaque étape, ce que fait concrètement celle ou celui qui porte la responsabilité en jeu.
@@ -397,7 +438,7 @@ const LEARN = {
   react: ['Épinglage : vous aviez noté la version de chaque document que vous utilisez ; le Nexus voit qu\'elle a changé et vous prévient. C\'est ce qui évite de coder sur une version périmée.',
     `Sur ${SCREEN}, le document concerné est en ambre. Une fois réaligné et republié, ${NEW_SESSION} pour ne pas mélanger l'ancienne et la nouvelle version.`],
   'intent-copy': ['Discover : on définit le besoin et son succès chiffré avant toute solution. La Business Intent Spec rejoint le registre Purpose du Nexus : toutes les étapes suivantes s\'y réfèrent.',
-    'Ouvrez le document dans l\'éditeur (cliquez sur le lien que donne Claude) : chaque phrase porte l\'étiquette de sa source (Nexus, Direction Revenu Annexe, décision de la squad, à confirmer).'],
+    'Ouvrez le document depuis l\'explorateur de fichiers, à gauche : context-nexus › teams › votre squad › intent › business-intent.md. Chaque phrase porte l\'étiquette de sa source.'],
   'intent-fill': ['Discover : un chiffre sans source ne vaut rien en G1. Le Nexus donne les faits, la Direction Revenu Annexe son ambition, la squad son engagement.',
     'Allez voir votre coach, qui joue la Direction Revenu Annexe, avec vos questions : elle ne répond qu\'à celles qu\'on lui pose.'],
   'intent-sign': ['TOM : cadrer l\'intention et fixer la priorité ne sont jamais délégués à l\'IA. Un humain nommé signe.',
@@ -405,7 +446,7 @@ const LEARN = {
   publish: ['Publier, c\'est rendre votre travail visible aux autres squads et au gate keeper. Manifesto du TOM : « ce qui n\'est pas écrit n\'existe pas ».',
     `Regardez ${SCREEN} : votre publication apparaît dans le flux et les critères de votre prochaine gate se cochent.`],
   gate: ['Une gate, c\'est un contrôle automatique puis une décision humaine. Le gate-check est « AI-executed » (une gate automatique tranche la forme) ; le gate keeper est « Human » (il juge le fond) ; vous, vous travaillez en « AI-assisted » : l\'IA produit, vous tenez le verdict. Manifesto : « une gate se passe sur preuve, jamais sur déclaration ».',
-    `Sur ${SCREEN}, la gate passe au vert au verdict du gate keeper. Après le GO, ${NEW_SESSION} : la phase suivante repart d'un contexte propre et coûte moins.`],
+    `Quand le gate-check est vert, vous n'avez plus rien à faire : à l'heure de votre créneau, le gate keeper (une personne de l'animation) vient à votre table, écoute votre présentation, puis enregistre GO ou NO-GO sur son poste. Vous le verrez sur ${SCREEN} ; tapez alors /coach (fiche de retour, puis nouvelle session pour la phase suivante).`],
   constitution: ['SDD avec Spec Kit, étape 0 : la constitution fixe les principes que l\'agent ne pourra pas contourner. Ils viennent des règles du Nexus, pas de son imagination.', null],
   specify: ['Spec Kit « Intent » : la spec fonctionnelle dit le quoi et le pourquoi, à partir de votre Business Intent Spec. C\'est elle, et non un ticket, qui guidera le code.', null],
   clarify: ['Spec Kit « Clarify » : l\'agent liste ce que la spec laisse flou. Chaque réponse évite un bug plus tard.', 'Pour chaque question : la réponse est dans le Nexus, chez la Direction Revenu Annexe, chez vous, ou dans le contrat d\'une autre squad.'],
@@ -427,6 +468,14 @@ const LEARN = {
   'spec-learn': ['Le TOM attend du Develop une spec mise à jour de ce que le code a appris (écarts, composants inventés) : la spec reste la vérité, pas le code seul.', null],
   cost: ['AI FinOps : le coût IA est attribué à l\'incrément (G4) et lu avec la qualité. Règle du TOM : jamais un gain de vitesse sans sa mesure de qualité.', null],
   bonus: ['Deepen et Drop : le PDLC ne s\'arrête pas au déploiement ; on juge la valeur réelle et on retire l\'ancien processus.', null],
+};
+
+// Qui rend le verdict de chaque gate dans le TOM V1.0 (le gate keeper du hackathon joue cette fonction).
+export const ACCOUNTABLE = {
+  G1: 'le Product Manager',
+  G2: 'le PO, l\'UX, le Tech Lead et l\'architecte',
+  G3: 'les développeurs et la QA (avec le CAB en périmètre PCI)',
+  G4: 'la QA et les équipes d\'exploitation (POE)',
 };
 
 // ---------- catalogue des étapes ----------
@@ -466,9 +515,9 @@ function pickStep(c) {
   // Fin de session : la fiche de retour finale, avant tout le reste.
   if (c.block === 'Débrief' && !c.retours.some(r => r[1] === 'FIN')) {
     return S('retour-final', 'Fiche de retour de fin de session (2 minutes)', 'toute la squad',
-      `node ${NX}/tools/retour.mjs FIN --rythme <oui|en-partie|non> --cadrage … --gates … --criteres … --responsabilites … --contexte … --8h … --changer "…" --garder "…"`,
+      `node ${NX}/tools/retour.mjs FIN --rythme <oui|en-partie|non> --cadrage … --gates … --criteres … --responsabilites … --contexte … --8h … --changer "…" --garder "…" --terrain "…"`,
       'Le TOM est une cible en cours de validation : vos retours de squad, lus par l\'owner du TOM, le font évoluer, et préparent les hackathons de 8 h.',
-      ['Répondre en squad, d\'une seule voix', 'Les deux lignes libres sont facultatives']);
+      ['Répondre en squad, d\'une seule voix', 'Les trois lignes libres sont facultatives', '« Pas comme chez nous » : l\'outil, le rituel ou le geste qui ne ressemble pas à votre quotidien chez Accor']);
   }
 
   // Après chaque verdict : la fiche de retour (20 secondes), puis le passage à la suite.
@@ -497,7 +546,7 @@ function pickStep(c) {
       ['Le critère nommé par le gate keeper est corrigé, et la correction est publiée', 'Le gate-check est vert avant de redemander la gate'], { note: lastV.note });
   }
   const GATE = () => S('gate', `Passer ${nextGate} · ${gates[nextGate].name}`, 'Decision Guarantor', `npm run gate-check -- ${nextGate}`,
-    `Lancez le gate-check officiel : s'il est au vert, le gate keeper ${gates[nextGate].keeper} vous attend à ${gates[nextGate].slot}. Il juge ce qu'une machine ne peut pas juger.`,
+    `Lancez le gate-check officiel. S'il est au vert, le gate keeper ${gates[nextGate].keeper} vient à votre table à ${gates[nextGate].slot} : votre Decision Guarantor lui présente le livrable en deux minutes. Aujourd'hui, ce gate keeper de l'animation joue ${ACCOUNTABLE[nextGate] || 'la fonction nommée par le TOM'} : chez Accor, c'est ${ACCOUNTABLE[nextGate] ? 'cette fonction' : 'elle'} qui rend ce verdict. Il juge ce qu'une machine ne peut pas juger, et enregistre lui-même son verdict.`,
     gates[nextGate].human, { slot: gates[nextGate].slot });
 
   if (nextGate === 'G1') {
@@ -511,7 +560,7 @@ function pickStep(c) {
       ['Le critère de succès est chiffré (valeur, seuil, horizon) et son auteur est connu', 'Chaque affirmation est datée et sourcée', 'Ce que le brief ne dit pas est marqué « à confirmer », pas inventé'],
       { items: c.filled.length < 5 ? [`${c.filled.length} champ(s) sur 5 remplis`] : ['Il reste du texte du gabarit entre < >'] });
     if (!c.ownerOk || c.intentFm.meta.status !== 'active') return S('intent-sign', 'Business Intent Spec : relire et signer', 'Specification Engineer',
-      `Dans le frontmatter : owner: <prénom.nom>, status: active, last-validated: ${c.config.date}`,
+      `Sur la phrase de signature d'un humain nommé : dans l'en-tête, owner: <prénom.nom>, status: active, last-validated: ${c.config.date}`,
       'Une spec que personne n\'a relue n\'est pas une spec : un humain nommé s\'engage.',
       ['La squad a relu les 5 champs à voix haute', 'Un humain nommé est owner']);
     if (c.unpublished.length) return S('publish', 'Publier dans le Nexus', 'Context Engineer',
@@ -624,6 +673,7 @@ export function renderText(s, { welcome = false, config } = {}) {
   if (st.say) L.push(`  À TAPER DANS CLAUDE :\n${st.say.split('\n').map(l => '    ' + l).join('\n')}`);
   if (st.humanDo) L.push(`  GESTE HUMAIN (l'agent ne le fait pas) : ${st.humanDo}`);
   if (st.cue) L.push(`  REPÈRE OUTIL : ${st.cue}`);
+  if (st.accor) L.push(`  SUR LE TERRAIN : ${st.accor}`);
   if (st.command && st.command !== st.say) L.push(`  (Ce que Claude lancera : ${st.command.split('\n')[0]})`);
   if (st.followUp) L.push(`  Ensuite :\n    ${st.followUp}`);
   if (st.items && st.items.length) L.push('  Points à regarder :\n' + st.items.map(i => `    - ${i}`).join('\n'));
