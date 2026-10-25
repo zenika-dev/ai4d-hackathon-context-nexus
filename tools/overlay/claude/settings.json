@@ -16,6 +16,7 @@
       "Bash(npm run deploy)",
       "Bash(node ../context-nexus/tools/context-assemble.mjs *)",
       "Bash(node ../context-nexus/tools/hackathon-status.mjs *)",
+      "Bash(node ../context-nexus/tools/retour.mjs *)",
       "Bash(git -C ../context-nexus pull)",
       "Bash(git -C ../context-nexus pull *)",
       "Bash(git -C ../context-nexus status *)",

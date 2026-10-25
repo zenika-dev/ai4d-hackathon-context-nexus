@@ -72,6 +72,23 @@ body.keeper .g:hover{border-color:var(--ink)}
 .feed li{display:flex;gap:10px;padding:4px 0;border-top:1px solid var(--line);min-width:0}
 .feed time{flex:none;color:var(--muted);font-variant-numeric:tabular-nums}
 .feed span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.me{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:12px;margin:0 0 14px}
+.me[hidden]{display:none}
+.me .card{border-color:var(--teal-b);background:var(--teal-t)}
+.me h2{color:var(--teal)}
+.me .step{font-size:20px;font-weight:700;margin-bottom:4px}
+.me .hat{font-size:13px;color:var(--muted);margin-bottom:10px}
+.say{display:flex;align-items:stretch;border:1px solid var(--teal);border-radius:10px;overflow:hidden;margin:6px 0 10px;background:var(--bg)}
+.say p{flex:1;min-width:0;padding:10px 12px;font-size:15px;white-space:pre-wrap}
+.say button{cursor:pointer;border:0;border-left:1px solid var(--teal);background:var(--teal);color:var(--bg);font:inherit;font-weight:700;font-size:13px;padding:0 14px}
+.hdo{border-left:3px solid var(--sand);padding:6px 10px;margin:0 0 10px;font-size:14px}
+.hdo b{color:var(--sand)}
+.me ul{margin:0;padding-left:18px;font-size:14px;display:flex;flex-direction:column;gap:3px}
+.crit{list-style:none;padding:0!important}
+.crit li::before{content:"○ ";color:var(--muted)} .crit li.ok::before{content:"✓ ";color:var(--teal)} .crit li.unk::before{content:"? ";color:var(--sand)}
+.sq.mine{border:2px solid var(--teal);box-shadow:0 0 0 3px rgba(94,187,198,.15)}
+.sq.mine .blk::after{content:" · vous";color:var(--teal)}
+@media (max-width:1100px){.me{grid-template-columns:1fr}}
 .kbar{display:none;margin:0 0 14px;padding:10px 14px;border:2px dashed var(--sand);border-radius:12px;align-items:center;gap:14px;flex-wrap:wrap}
 body.keeper .kbar{display:flex}
 button.act{font:inherit;font-weight:700;border:0;border-radius:10px;padding:10px 18px;background:var(--sand);color:var(--bg);cursor:pointer}
@@ -101,6 +118,8 @@ dialog input[type=text],dialog textarea{width:100%;font:inherit;background:var(-
 </div>
 
 <div class="banner" id="banner"></div>
+
+<section class="me" id="me" hidden aria-label="Votre squad"></section>
 
 <div class="kbar" id="kbar"></div>
 
@@ -151,7 +170,7 @@ async function poll() {
   } catch (e) { document.body.classList.add('off'); }
 }
 
-function render() { renderSquads(); renderGraph(); renderSide(); renderFeed(); renderKeeperBar(); renderBanner(); tick(); }
+function render() { renderMe(); renderSquads(); renderGraph(); renderSide(); renderFeed(); renderKeeperBar(); renderBanner(); tick(); }
 
 function renderSquads() {
   $('squads').innerHTML = S.squads.map(function (q) {
@@ -162,11 +181,35 @@ function renderSquads() {
     }).join('');
     var nxt = q.nextGate ? 'Prochaine gate ' + q.nextGate + (q.nextSlotSec > 0 ? ' dans <b data-cd="' + q.nextSlotSec + '" data-t0="' + Date.now() + '">' + dur(q.nextSlotSec) + '</b>' : ' : <b>créneau atteint</b>') : 'Les quatre gates sont passées';
     var c = q.counts;
-    return '<article class="sq"><div class="sqh"><span class="num">' + q.number + '</span><div><h3>' + esc(q.label) + '</h3><p>' + esc(q.volet) + '</p></div></div>'
+    return '<article class="sq' + (S.me && S.me.id === q.id ? ' mine' : '') + '"><div class="sqh"><span class="num">' + q.number + '</span><div><h3>' + esc(q.label) + '</h3><p>' + esc(q.volet) + '</p></div></div>'
       + '<span class="blk">' + esc(q.block || 'Hors session') + '</span><div class="gates">' + gates + '</div><p class="nxt">' + nxt + '</p>'
       + '<p class="meta">' + c.active + ' artefact(s) actif(s)' + (c.stale ? ' · <span style="color:var(--sand)">' + c.stale + ' à réaligner</span>' : '') + ' · ' + ago(q.lastActivity) + '</p></article>';
   }).join('');
   Array.prototype.forEach.call(document.querySelectorAll('.g'), function (b) { b.addEventListener('click', function () { if (S.keeper) openGate(b.dataset.squad, b.dataset.gate); }); });
+}
+
+function renderMe() {
+  var m = S.me, el = $('me');
+  if (!m) { el.hidden = true; return; }
+  el.hidden = false;
+  document.querySelector('.top .eyebrow').textContent = 'Écran de la squad ' + m.label + ' · Hackathon Champions';
+  var g = m.gate, st = m.step;
+  var crit = g ? g.auto.map(function (c) { return '<li class="' + (c.ok ? 'ok' : (c.unknown ? 'unk' : '')) + '">' + esc(c.id + ' ' + c.label) + '</li>'; }).join('') : '';
+  var alert = (m.pinIssues.length ? '<p class="hdo"><b>Un contrat d\'une autre squad a changé :</b> ' + m.pinIssues.map(function (n) { return esc(n.path.split('/').pop().replace('.md', '') + ' ' + n.pinned + ' → ' + n.current); }).join(', ') + '</p>' : '')
+    + (m.unpublished.length ? '<p class="meta">Pas encore publié : ' + esc(m.unpublished.join(', ')) + '</p>' : '');
+  el.innerHTML = '<div class="card"><h2>Votre squad · ' + esc(m.label) + ' · ' + esc(m.phase) + '</h2>'
+    + '<p class="step">' + esc(st.label) + '</p><p class="hat">Responsabilité en jeu : <b>' + esc(st.hat) + '</b>' + (st.hatDoes ? ' · ' + esc(st.hatDoes) : '') + '</p>'
+    + (st.learn ? '<p class="hdo" style="border-color:var(--teal)"><b style="color:var(--teal)">Ce que vous apprenez :</b> ' + esc(st.learn) + '</p>' : '')
+    + alert
+    + (st.say ? '<p class="meta">À taper dans Claude :</p><div class="say"><p id="saytxt">' + esc(st.say) + '</p><button type="button" id="saycp">Copier</button></div>' : '')
+    + (st.humanDo ? '<p class="hdo"><b>Geste humain :</b> ' + esc(st.humanDo) + '</p>' : '')
+    + (st.cue ? '<p class="meta" style="margin-bottom:6px"><b>Repère :</b> ' + esc(st.cue) + '</p>' : '')
+    + '<p class="meta">Pourquoi : ' + esc(st.why) + '</p></div>'
+    + '<div class="card"><h2>' + (g ? 'Avant ' + esc(g.id) + ' · ' + esc(g.name) + ' · ' + esc(g.slot) : 'Les quatre gates sont passées') + '</h2>'
+    + (g ? '<ul class="crit">' + crit + '</ul><p class="meta" style="margin:10px 0 4px">Ce que juge le gate keeper ' + esc(g.keeper) + ' :</p><ul>' + g.human.map(function (h) { return '<li>' + esc(h) + '</li>'; }).join('') + '</ul>' : '')
+    + '<p class="meta" style="margin-top:10px">Dans Claude, <b>/coach</b> donne le même conseil, expliqué.</p></div>';
+  var b = $('saycp');
+  if (b) b.onclick = function () { var t = st.say; var ok = function () { b.textContent = 'Copié'; setTimeout(function () { b.textContent = 'Copier'; }, 1400); }; if (navigator.clipboard) navigator.clipboard.writeText(t).then(ok, function () {}); };
 }
 
 function renderGraph() {

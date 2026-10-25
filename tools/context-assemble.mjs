@@ -118,7 +118,10 @@ function assemble(squad, artifacts) {
     ...own.filter(a => a.meta['consumption-mode'] !== 'system-prompt'),
     ...[...consumed.keys()].map(p => artifacts.get(p)).filter(Boolean)
       .filter(a => !systemPrompt.includes(a)),
-  ];
+    // Le contexte de mission du programme (brief, règles métier, décisions déjà prises…) est injecté dès le Discover,
+    // avant même que la squad ait écrit son Intent : c'est la première chose que l'agent doit connaître.
+    ...[...artifacts.values()].filter(a => a.meta.register === 'knowledge' && a.meta.level === 'programme' && a.meta['consumption-mode'] === 'context-injection'),
+  ].filter((a, i, all) => all.indexOf(a) === i);
   const excluded = [];
   const keep = list => list.filter(a => {
     const adm = contractAdmission(a);

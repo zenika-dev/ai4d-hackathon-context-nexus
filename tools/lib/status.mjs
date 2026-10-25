@@ -159,6 +159,7 @@ export function computeStatus({ nexus, starter = null, squad, config, now = new 
   const contracts = own.filter(a => a.meta.register === 'contracts' && /\/contracts\//.test(a.path));
   const runbook = artifacts.get(`teams/${squad}/operations/runbook.md`);
   const flagsRows = readJournal(nexus, squad, 'flags-journal.md');
+  const retours = readJournal(nexus, squad, 'retours.md');
 
   // Écarts d'épinglage sur les artefacts de la squad
   const neighbors = [];
@@ -230,10 +231,21 @@ export function computeStatus({ nexus, starter = null, squad, config, now = new 
   };
   for (const [g, list] of Object.entries(auto)) for (const c of list) if (c.unknown) c.detail = `à vérifier avec npm run gate-check -- ${g}`;
   const human = {
-    G1: ['Le critère de succès chiffré est pertinent et son owner connu', 'Les données nécessaires sont identifiées, avec leurs trous', 'La priorité est justifiée, avec un owner'],
-    G2: ['Les exigences non fonctionnelles sont chiffrées', 'La Definition of Ready est tenue', 'La spec est active, avec un owner'],
-    G3: ['Une revue nommée a eu lieu', pci ? 'Le code de débit porte une signature humaine nommée' : 'La criticité est qualifiée', 'Le plan de feature flags est écrit'],
-    G4: ['Un owner d\'exploitation est nommé', 'Le runbook et le rollback sont écrits', 'La bascule du flag est tracée (Release ≠ Activation)'],
+    G1: ['Le critère de succès chiffré est pertinent, lié à un objectif métier, et on sait qui l\'a fixé',
+      'Chaque donnée nécessaire a sa disponibilité : disponible, à acquérir ou bloquée',
+      'La réutilisation est examinée : une solution existante est nommée, ou son absence justifiée',
+      'La priorité est décidée, avec un owner nommé'],
+    G2: ['Les exigences non fonctionnelles (NFR : performance, disponibilité, accessibilité…) sont chiffrées, sans adjectif',
+      'La Definition of Ready (DoR) est tenue : la spec est prête à être codée (critères testables par un agent, versions épinglées, questions closes)',
+      'La spec est active, avec un owner'],
+    G3: ['Une revue nommée a eu lieu (qui a relu, humain ou agent)',
+      'L\'implémentation colle à la spec : chaque écart et chaque composant inventé est signalé',
+      pci ? 'Le code de débit porte une signature humaine nommée (périmètre PCI)' : 'La criticité est qualifiée (ce que coûterait une erreur : c\'est elle qui dit qui doit approuver)',
+      'Le plan de flags est écrit : ce qui est livré, ce qui est activé, et quand on revient en arrière'],
+    G4: ['Un owner d\'exploitation est nommé, avec runbook et rollback',
+      'La bascule du flag est tracée : qui, quand, pourquoi (Release ≠ Activation)',
+      'Les KPI promis en G1 sont instrumentés',
+      'Le coût IA de l\'incrément est relevé, et lu avec la qualité'],
   };
 
   const gates = {};
@@ -255,8 +267,8 @@ export function computeStatus({ nexus, starter = null, squad, config, now = new 
   });
 
   const publishMissing = cfg.g4Publish.filter(p => { const a = artifacts.get(p); return !(a && cmpVersion(a.meta.version, '1.0.0') >= 0); });
-  const ctx = { config, squad, cfg, st, publishMissing, fields, filled, intentText, intentFm, ownerOk, specs, contracts, runbook, flagsRows, pinIssues, ownStale, ownChanged, unpublished, nextGate, gates, milestones };
-  const step = pickStep(ctx);
+  const ctx = { config, squad, cfg, st, publishMissing, retours, block: block ? block.id : null, runbookText, fields, filled, intentText, intentFm, ownerOk, specs, contracts, runbook, flagsRows, pinIssues, ownStale, ownChanged, unpublished, nextGate, gates, milestones };
+  const step = withSay(pickStep(ctx), ctx);
 
   return {
     squad, label: cfg.label, number: cfg.number, volet: cfg.volet, pci,
@@ -266,6 +278,156 @@ export function computeStatus({ nexus, starter = null, squad, config, now = new 
     own: { intent: intentFm ? { status: intentFm.meta.status, owner: intentFm.meta.owner } : null, specs: specs.map(s => ({ path: s.path, status: s.meta.status })), contracts: contracts.map(c => ({ path: c.path, version: c.meta.version, status: c.meta.status })) },
   };
 }
+
+// ---------- ce que le participant dit à Claude ----------
+// Un participant ne tape pas de commande shell : il parle à Claude (ou tape une commande Spec Kit, qui fait partie de
+// ce qu'il apprend). `say` est la phrase à taper ; `humanDo`, le geste que seul un humain peut faire ; `command` reste
+// ce que Claude lance pour lui.
+
+export const PHASES = {
+  Discover: { n: 1, goal: 'Comprendre le besoin et le chiffrer, avant toute solution', output: 'la Business Intent Spec (5 champs, critère de succès chiffré)' },
+  Design: { n: 2, goal: 'Concevoir avant de coder, et s\'aligner avec les autres squads', output: 'la spec, le plan et les tâches (Spec Kit), et votre contrat v1 publié' },
+  Develop: { n: 3, goal: 'Coder tâche par tâche avec l\'agent, tests compris, sans jamais coder sur un contrat périmé', output: 'le code, ses tests et une spec à jour' },
+  Deploy: { n: 4, goal: 'Livrer, puis activer par une décision humaine tracée', output: 'le service déployé, le flag activé, le runbook, les KPI publiés' },
+};
+
+function withSay(step, c) {
+  const flag = c.st && c.st.flags ? Object.keys(c.st.flags)[0] : '<nom-du-flag>';
+  const SAY = {
+    assemble: ['Mets à jour le contexte'],
+    'own-changed': ['Notre contrat a changé sans nous : montre-nous ce qui a changé et ce que ça touche dans notre spec'],
+    react: [c.pinIssues[0] && !c.pinIssues[0].path.startsWith('teams/') ? `${c.pinIssues[0].path.split('/').pop()} a changé dans le Nexus : montre-nous le changement, ce qu'il touche chez nous, et mets à jour notre épinglage` : 'Un contrat d\'une autre squad a changé : montre-nous le changement et ce qu\'il touche chez nous'],
+    bonus: ['Préparons le bonus : le verdict G5 et le retrait G6, en version courte'],
+    gate: [`Vérifie qu'on passe la gate ${c.nextGate}`],
+    'intent-copy': ['Aide-nous à écrire notre Business Intent Spec : copie le gabarit dans notre dossier, remplis tout ce que le Context Nexus permet de remplir en citant le fichier, puis fais-nous trois listes courtes : ce qu\'il faut demander à la Direction Revenu Annexe, ce que nous devons décider, ce qui reste à confirmer'],
+    'intent-fill': ['Voici les réponses de la Direction Revenu Annexe et nos décisions : (collez-les). Complète la Business Intent Spec avec l\'étiquette de source de chaque phrase, et dis-nous ce qui manque encore'],
+    'intent-sign': ['Ouvre-nous la Business Intent Spec dans l\'éditeur',
+      'Relisez les 5 champs ensemble. Puis, dans l\'en-tête du fichier, remplacez « status: draft » par « status: active » et mettez votre prénom.nom dans « owner » : c\'est votre signature, l\'agent ne la met jamais à votre place.'],
+    publish: ['Publie nos changements dans le Context Nexus'],
+    'spec-publish': ['Publie notre spec dans le Context Nexus, avec son en-tête et nos épinglages'],
+    'contract-v1': ['Prépare notre contrat v1 en suivant la checklist, puis montre-le-nous pour qu\'on le relise',
+      'Relisez le contrat ; dans son en-tête, passez « status » à « active » : c\'est votre signature.'],
+    tests: ['Écris un test par critère d\'acceptance, nommé d\'après lui, puis lance les tests'],
+    sign: ['Prépare le commit du code de débit : notre Decision Guarantor va le signer',
+      'Le Decision Guarantor relit le code de débit, puis tape lui-même dans le terminal : git commit -s -m "…"'],
+    runbook: ['Rédige notre runbook à partir du gabarit et de la spec : owner d\'exploitation et rollback'],
+    flag: ['Déploie le service',
+      `Ensuite, un humain active la fonctionnalité en tapant lui-même dans le terminal : npm run flag -- ${flag} on --reason "pourquoi maintenant"`],
+    'kpi-publish': [`Publie notre contrat ${step.label.replace(/^Publier | en v1$/g, '')} en v1`],
+    retour: [`Fiche de retour ${step.gate} : pour nous, les critères de la gate étaient (clairs / en partie clairs / flous) ; le critère le moins clair : (facultatif)`],
+    'retour-final': ['Fiche de retour de fin de session : (pour chaque point, oui / en partie / non) rythme tenable ; cadrage du début utile ; gates de 5 minutes adaptées ; critères des gates clairs ; responsabilités claires ; contexte partagé utile ; je saurai expliquer ce déroulé à mon équipe au 8 h. À changer : … À garder : …'],
+    nogo: [`Le gate keeper a dit NO-GO à ${c.nextGate}${step.note ? ` : « ${step.note} »` : ''}. Aide-nous à corriger ce point, publie la correction, puis vérifie qu'on passe la gate`],
+    'spec-learn': ['Compare notre code à la spec : liste les écarts et les composants inventés ou adaptés, mets la spec à jour, puis montre-nous ce qui a changé'],
+    cost: ['Ajoute à notre runbook le coût IA de l\'incrément : voici la consommation affichée par Claude : (collez-la)',
+      'Relevez la consommation de la session dans la barre de gauche de Claude (rubrique « Session ») et collez-la : c\'est vous qui la lisez, pas l\'agent.'],
+  };
+  const x = SAY[step.id];
+  const base = x ? { ...step, say: x[0], humanDo: x[1] || null } : { ...step, say: step.command || '' };   // étapes Spec Kit : la commande /speckit-… est ce qu'on tape
+  const L = LEARN[step.id] || [];
+  let cue = L[1] || null;
+  if (step.id === 'retour') cue = step.verdict === 'GO'
+    ? `Convention du TOM : le livrable d'une phase est l'entrée de la suivante. ${HANDOVER[step.gate] || ''} Après cette fiche, ${NEW_SESSION} : la nouvelle phase repart d'un contexte propre et du brief à jour, et coûte moins.`
+    : `Sur ${SCREEN}, la gate est rouge avec son motif : c'est la prochaine chose à corriger.`;
+  return { ...base, learn: L[0] || null, cue, hatDoes: HAT_DOES[step.id] || null, hatDef: hatDefinition(step.hat, c.config), checkpoint: CHECKPOINT[step.id] || null };
+}
+
+// Les quatre responsabilités du TOM jouées par la squad : personne ne les connaît, on les apprend en les exerçant.
+// À chaque étape, ce que fait concrètement celle ou celui qui porte la responsabilité en jeu.
+const HAT_DOES = {
+  assemble: 'Ici : s\'assure que l\'agent travaille avec le contexte à jour, puis annonce à la squad ce qui a changé.',
+  'own-changed': 'Ici : lit le changement à voix haute devant la squad et repère ce qu\'il touche dans votre spec, vos tests et votre code.',
+  react: 'Ici : lit le changement à voix haute devant la squad, repère ce qu\'il touche chez vous, puis fait mettre à jour l\'épinglage.',
+  'intent-copy': 'Ici : tient la plume de la Business Intent Spec, fait travailler l\'agent, puis porte les questions à la Direction Revenu Annexe.',
+  'intent-fill': 'Ici : rapporte les réponses de la Direction Revenu Annexe et les décisions de la squad, et vérifie que chaque phrase a sa source.',
+  'intent-sign': 'Ici : fait relire les 5 champs à la squad et signe comme owner. Le Decision Guarantor vérifie qu\'un humain nommé s\'engage.',
+  publish: 'Ici : publie le travail de la squad dans le Nexus et vérifie que rien ne sort du dossier de la squad.',
+  gate: 'Ici : lance le gate-check, présente le dossier au gate keeper et engage la squad sur le verdict.',
+  constitution: 'Ici : vérifie que chaque principe de la constitution vient bien d\'une règle du Nexus, avec sa source.',
+  specify: 'Ici : lance la spec et la relit. Elle doit reprendre la Business Intent Spec sans rien inventer.',
+  clarify: 'Ici : chacun répond selon sa responsabilité ; le Specification Engineer consigne les réponses dans la spec.',
+  plan: 'Ici : le Specification Engineer garde le quoi ; l\'Agentic Workflow Orchestrator choisit comment faire travailler l\'agent.',
+  tasks: 'Ici : découpe le travail pour l\'agent en tâches vérifiables et surveille le budget de tokens.',
+  analyze: 'Ici : lit le rapport de cohérence et tranche chaque incohérence. C\'est une décision, pas une formalité.',
+  'spec-publish': 'Ici : publie la spec avec ses épinglages, pour que le Nexus puisse vous prévenir si un contrat change.',
+  'contract-v1': 'Ici : écrit le contrat avec l\'agent ; la squad le relit, puis le signe en le passant en active.',
+  implement: 'Ici : lance l\'agent tâche par tâche, vérifie que les tests passent et surveille les tokens.',
+  tests: 'Ici : fait écrire un test par critère d\'acceptance et vérifie qu\'il porte le nom du critère.',
+  sign: 'Ici : relit le code de débit et le signe de son nom. L\'agent ne le fait jamais.',
+  runbook: 'Ici : s\'assure qu\'un owner d\'exploitation est nommé et que le retour arrière tient en une commande.',
+  flag: 'Ici : décide d\'activer et l\'active lui-même ou elle-même, avec un motif écrit.',
+  'kpi-publish': 'Ici : publie la définition des KPI que les autres squads et la mesure G5 utiliseront.',
+  bonus: 'Ici : rend le verdict de valeur face à la promesse faite en G1.',
+  nogo: 'Ici : fait corriger le critère nommé par le gate keeper, vérifie le gate-check, puis redemande la gate.',
+  retour: 'Ici : chacun donne son avis, la squad répond d\'une seule voix.',
+  'retour-final': 'Ici : chacun donne son avis, la squad répond d\'une seule voix.',
+  'spec-learn': 'Ici : fait remonter dans la spec ce que le code a appris, et la republie.',
+  cost: 'Ici : relève la consommation de l\'agent et la rapproche de ce qu\'elle a produit.',
+};
+
+// Les points de contrôle humains du TOM (gates par tâche) : Approuver, Valider, Choisir, Signer.
+const CHECKPOINT = {
+  'intent-copy': 'Approuver : l\'intention est-elle bien cadrée ?', 'intent-fill': 'Approuver : l\'intention est-elle bien cadrée ?', specify: 'Approuver : l\'intention est-elle bien cadrée ?',
+  constitution: 'Valider : l\'analyse est-elle solide ?', clarify: 'Valider : l\'analyse est-elle solide ?', tasks: 'Valider : l\'analyse est-elle solide ?', analyze: 'Valider : l\'analyse est-elle solide ?',
+  implement: 'Valider : le résultat est-il solide ?', tests: 'Valider : le résultat est-il solide ?', 'spec-learn': 'Valider : la spec dit-elle vrai ?', react: 'Valider : l\'analyse du changement est-elle solide ?', 'own-changed': 'Valider : l\'analyse du changement est-elle solide ?',
+  plan: 'Choisir : quelle option, parmi celles que l\'agent propose ?',
+  'intent-sign': 'Signer : la livraison est-elle acceptée ?', 'contract-v1': 'Signer : la livraison est-elle acceptée ?', gate: 'Signer : la livraison est-elle acceptée ?', nogo: 'Signer : la correction est-elle acceptée ?',
+  sign: 'Signer : la livraison est-elle acceptée ?', flag: 'Signer : l\'activation est-elle décidée ?', runbook: 'Signer : l\'exploitation est-elle prête ?',
+};
+const HANDOVER = {
+  G1: 'Votre Business Intent Spec devient l\'entrée du Design : la spec Spec Kit va la reprendre.',
+  G2: 'Votre spec et votre contrat v1 deviennent l\'entrée du Develop : l\'agent code contre eux.',
+  G3: 'Votre code, vos tests et votre spec à jour deviennent l\'entrée du Deploy.',
+  G4: 'Votre service observé devient l\'entrée de Deepen : les KPI publiés serviront au verdict de valeur (G5).',
+};
+
+function hatDefinition(hat, config) {
+  const hats = (config && config.hats) || {};
+  const found = Object.keys(hats).filter(h => String(hat).includes(h) || (/Orchestrator|Guarantor/.test(h) && String(hat).includes(h.split(' ').pop())));
+  return found.length ? found.map(h => `${h} : ${hats[h]}`).join(' ') : null;
+}
+
+// Ce que le participant apprend en faisant l'étape (une phrase), et le repère d'outil à lui donner à ce moment-là.
+const SCREEN = 'l\'écran de votre squad (onglet à côté de l\'éditeur)';
+const NEW_SESSION = 'ouvrez une nouvelle session Claude (bouton « Nouvelle session »)';
+const LEARN = {
+  assemble: ['Context Nexus : le brief assemblé est le contexte que lit l\'agent (règles, contrats des autres squads, versions). Sans lui, il invente. Manifesto du TOM : « le contexte n\'est jamais supposé ».',
+    `Ensuite, ${NEW_SESSION} : l'agent repart du brief à jour.`],
+  'own-changed': ['Épinglage : votre contrat est une promesse faite aux autres squads ; quand il change, votre spec, vos tests et votre code décrivent encore l\'ancienne version.',
+    `Sur ${SCREEN}, votre contrat est en rouge et ses consommateurs en ambre. Une fois réaligné et republié, ${NEW_SESSION} pour repartir de la nouvelle version.`],
+  react: ['Épinglage : vous aviez noté la version de chaque document que vous utilisez ; le Nexus voit qu\'elle a changé et vous prévient. C\'est ce qui évite de coder sur une version périmée.',
+    `Sur ${SCREEN}, le document concerné est en ambre. Une fois réaligné et republié, ${NEW_SESSION} pour ne pas mélanger l'ancienne et la nouvelle version.`],
+  'intent-copy': ['Discover : on définit le besoin et son succès chiffré avant toute solution. La Business Intent Spec rejoint le registre Purpose du Nexus : toutes les étapes suivantes s\'y réfèrent.',
+    'Ouvrez le document dans l\'éditeur (cliquez sur le lien que donne Claude) : chaque phrase porte l\'étiquette de sa source (Nexus, Direction Revenu Annexe, décision de la squad, à confirmer).'],
+  'intent-fill': ['Discover : un chiffre sans source ne vaut rien en G1. Le Nexus donne les faits, la Direction Revenu Annexe son ambition, la squad son engagement.',
+    'Allez voir votre coach, qui joue la Direction Revenu Annexe, avec vos questions : elle ne répond qu\'à celles qu\'on lui pose.'],
+  'intent-sign': ['TOM : cadrer l\'intention et fixer la priorité ne sont jamais délégués à l\'IA. Un humain nommé signe.',
+    null],
+  publish: ['Publier, c\'est rendre votre travail visible aux autres squads et au gate keeper. Manifesto du TOM : « ce qui n\'est pas écrit n\'existe pas ».',
+    `Regardez ${SCREEN} : votre publication apparaît dans le flux et les critères de votre prochaine gate se cochent.`],
+  gate: ['Une gate, c\'est un contrôle automatique puis une décision humaine. Le gate-check est « AI-executed » (une gate automatique tranche la forme) ; le gate keeper est « Human » (il juge le fond) ; vous, vous travaillez en « AI-assisted » : l\'IA produit, vous tenez le verdict. Manifesto : « une gate se passe sur preuve, jamais sur déclaration ».',
+    `Sur ${SCREEN}, la gate passe au vert au verdict du gate keeper. Après le GO, ${NEW_SESSION} : la phase suivante repart d'un contexte propre et coûte moins.`],
+  constitution: ['SDD avec Spec Kit, étape 0 : la constitution fixe les principes que l\'agent ne pourra pas contourner. Ils viennent des règles du Nexus, pas de son imagination.', null],
+  specify: ['Spec Kit « Intent » : la spec fonctionnelle dit le quoi et le pourquoi, à partir de votre Business Intent Spec. C\'est elle, et non un ticket, qui guidera le code.', null],
+  clarify: ['Spec Kit « Clarify » : l\'agent liste ce que la spec laisse flou. Chaque réponse évite un bug plus tard.', 'Pour chaque question : la réponse est dans le Nexus, chez la Direction Revenu Annexe, chez vous, ou dans le contrat d\'une autre squad.'],
+  plan: ['Spec Kit « Design » : le comment. C\'est ici qu\'on compare vos champs à ceux des contrats des autres squads (type, unité, format), avant qu\'un écart devienne un bug.', null],
+  tasks: ['Spec Kit « Decompose » : des tâches courtes et testables, pour que le travail de l\'agent soit vérifiable une à une.', null],
+  analyze: ['Spec Kit « Check » : spec, plan, tâches et constitution doivent raconter la même histoire avant qu\'on écrive du code.', null],
+  'spec-publish': ['La spec publiée porte ses épinglages : si un contrat qu\'elle utilise change, le Nexus vous préviendra.', `Regardez ${SCREEN} : la spec apparaît dans le flux.`],
+  'contract-v1': ['Registre Contracts : votre contrat v1 est une promesse faite aux autres squads. Publié tôt, même imparfait, il leur permet d\'avancer.', `Sur ${SCREEN}, votre contrat passe en v1 et les squads qui le lisent devront s'y épingler.`],
+  implement: ['Spec Kit « Implement » : l\'agent code tâche par tâche contre la spec, avec un test nommé par critère d\'acceptance.', `Si ${SCREEN} passe au rouge pendant ce temps, arrêtez-vous : un contrat a changé.`],
+  tests: ['Un critère d\'acceptance sans test n\'est qu\'une intention (ENG-04).', null],
+  sign: ['TOM : certaines décisions ne sont jamais déléguées à l\'IA ; la signature du code de débit (PCI) en fait partie.', null],
+  runbook: ['Deploy, Runtime Spec : comment exploiter le service et revenir en arrière. Sans runbook, on ne sait pas défaire.', null],
+  flag: ['Release ≠ Activation : déployer et activer sont deux décisions. La seconde est humaine et tracée (qui, quand, pourquoi).', null],
+  'kpi-publish': ['Les KPI publiés permettront, en Deepen (G5), de juger la valeur réelle face à la promesse de G1.', `Regardez ${SCREEN} : la publication apparaît dans le flux.`],
+  nogo: ['Convention du TOM : une gate renvoie, elle ne bloque pas en silence. Le no-go nomme le critère qui manque ; c\'est un apprentissage, pas une sanction.',
+    `Sur ${SCREEN}, la gate est rouge avec son motif. Une fois corrigé et publié, prévenez le gate keeper pour repasser.`],
+  retour: ['Le TOM évolue avec le terrain : vos retours de squad alimentent son learning report (lecture par squad, jamais par personne).', null],
+  'retour-final': ['Le TOM est une cible en cours de validation : vos retours de fin de session décident des ajustements des hackathons de 8 h.', null],
+  'spec-learn': ['Le TOM attend du Develop une spec mise à jour de ce que le code a appris (écarts, composants inventés) : la spec reste la vérité, pas le code seul.', null],
+  cost: ['AI FinOps : le coût IA est attribué à l\'incrément (G4) et lu avec la qualité. Règle du TOM : jamais un gain de vitesse sans sa mesure de qualité.', null],
+  bonus: ['Deepen et Drop : le PDLC ne s\'arrête pas au déploiement ; on juge la valeur réelle et on retire l\'ancien processus.', null],
+};
 
 // ---------- catalogue des étapes ----------
 // Les étiquettes Intent, Clarify, Design, Decompose, Check, Implement, Converge sont celles de la page participants.
@@ -294,11 +456,30 @@ function pickStep(c) {
 
   if (pinIssues.length) {
     const n = pinIssues[0];
-    return S('react', 'Réagir : un contrat d\'une autre squad a changé', 'Context Engineer',
+    return S('react', n.path.startsWith('teams/') ? 'Réagir : un contrat d\'une autre squad a changé' : 'Réagir : un document du Nexus que vous utilisez a changé', 'Context Engineer',
       `git -C ${NX} pull && node ${NX}/tools/context-assemble.mjs --squad ${squad} --mark-stale --out .context/brief.md && git -C ${NX} log -p -3 -- teams/`,
       'Lire CE qui a changé, pas seulement QUE ça a changé : c\'est ce qui évite de coder sur un contrat périmé (règle n°7 de Vélora).',
       ['Le diff du contrat est lu à voix haute devant la squad', 'La squad a identifié les exigences, critères et tâches touchés', 'Le contrat d\'une autre squad est épinglé à sa nouvelle version, puis la spec repasse en active'],
       { followUp: `/speckit-clarify Le contrat ${n.path} est passé de la version ${n.pinned} à ${n.current} (voir .context/brief.md). Quelles exigences, quels critères d'acceptance et quelles tâches de notre spec sont impactés ?`, items: pinIssues.map(x => `${x.path} ${x.pinned} → ${x.current} (${x.kind})`) });
+  }
+
+  // Fin de session : la fiche de retour finale, avant tout le reste.
+  if (c.block === 'Débrief' && !c.retours.some(r => r[1] === 'FIN')) {
+    return S('retour-final', 'Fiche de retour de fin de session (2 minutes)', 'toute la squad',
+      `node ${NX}/tools/retour.mjs FIN --rythme <oui|en-partie|non> --cadrage … --gates … --criteres … --responsabilites … --contexte … --8h … --changer "…" --garder "…"`,
+      'Le TOM est une cible en cours de validation : vos retours de squad, lus par l\'owner du TOM, le font évoluer, et préparent les hackathons de 8 h.',
+      ['Répondre en squad, d\'une seule voix', 'Les deux lignes libres sont facultatives']);
+  }
+
+  // Après chaque verdict : la fiche de retour (20 secondes), puis le passage à la suite.
+  // Une fiche par verdict : après un NO-GO puis un GO, la seconde fiche porte aussi le passage à la phase suivante.
+  const fb = Object.keys(gates).find(g => gates[g].verdict && !c.retours.some(r => r[1] === g && r[2] === gates[g].verdict.verdict));
+  if (fb) {
+    const v = gates[fb].verdict;
+    return S('retour', `Fiche de retour ${fb} (20 secondes)`, 'toute la squad',
+      `node ${NX}/tools/retour.mjs ${fb} --clarte <claire|partielle|floue> --flou "<le critère flou, si besoin>"`,
+      `Le gate keeper a rendu son verdict : ${v.verdict}${v.note ? ` (${v.note})` : ''}. Avant de continuer, dites si les critères de ${fb} étaient clairs : c'est ce qui fait évoluer le TOM.`,
+      ['Une seule réponse pour la squad', 'Lecture par squad, jamais par personne'], { gate: fb, verdict: v.verdict });
   }
 
   if (!nextGate) {
@@ -307,21 +488,29 @@ function pickStep(c) {
   }
 
   const gateReady = gates[nextGate].autoOk === gates[nextGate].autoTotal;
+  // Un NO-GO renvoie, il ne bloque pas en silence : il nomme le critère qui manque.
+  const lastV = gates[nextGate].verdict;
+  if (lastV && lastV.verdict === 'NO-GO') {
+    return S('nogo', `NO-GO à ${nextGate} : corriger, puis repasser`, 'Decision Guarantor',
+      `npm run gate-check -- ${nextGate}`,
+      `Le gate keeper ${gates[nextGate].keeper} a dit NO-GO${lastV.note ? ` : « ${lastV.note} »` : ''}. Le no-go nomme ce qui manque et vous renvoie à l'étape concernée : corrigez ce point, puis redemandez la gate.`,
+      ['Le critère nommé par le gate keeper est corrigé, et la correction est publiée', 'Le gate-check est vert avant de redemander la gate'], { note: lastV.note });
+  }
   const GATE = () => S('gate', `Passer ${nextGate} · ${gates[nextGate].name}`, 'Decision Guarantor', `npm run gate-check -- ${nextGate}`,
     `Lancez le gate-check officiel : s'il est au vert, le gate keeper ${gates[nextGate].keeper} vous attend à ${gates[nextGate].slot}. Il juge ce qu'une machine ne peut pas juger.`,
     gates[nextGate].human, { slot: gates[nextGate].slot });
 
   if (nextGate === 'G1') {
-    if (!c.intentText) return S('intent-copy', 'Intent : copier le gabarit', 'Specification Engineer',
+    if (!c.intentText) return S('intent-copy', 'Business Intent Spec : la rédiger avec Claude', 'Specification Engineer',
       `cp ${NX}/gabarits/business-intent.md ${NX}/teams/${squad}/intent/business-intent.md`,
-      'Un besoin écrit en 5 champs oblige à choisir : problème, utilisateurs, succès chiffré, données, priorité.',
-      ['Le fichier est dans le dossier de votre squad, pas ailleurs']);
-    if (c.filled.length < 5 || PLACEHOLDER.test(c.intentText.replace(/^---\n[\s\S]*?\n---\n?/, ''))) return S('intent-fill', 'Intent : remplir les 5 champs', 'Specification Engineer',
-      'Lis .context/brief.md. Liste ce que le brief ne dit pas et qui empêche de fixer un critère de succès chiffré pour notre volet. Pour chaque point, dis quelle donnée ou quelle squad pourrait y répondre. Ne rédige pas la Business Intent Spec : pose les questions.',
-      'Le brief est volontairement flou. L\'agent pose les questions, la squad décide : l\'Intent reste humain.',
+      'Un besoin écrit en 5 champs oblige à choisir : problème, utilisateurs, succès chiffré, données, priorité. Trois sources, chacune visible dans le document par une étiquette : le Context Nexus pour les faits, les règles et les décisions déjà prises (Claude les lit et les cite) ; la Direction Revenu Annexe pour son ambition chiffrée, l\'horizon et la priorité (votre coach la joue : allez la voir) ; votre squad pour ce qu\'elle choisit et signe.',
+      ['Chaque phrase porte son étiquette : [Nexus : fichier], [Direction Revenu Annexe], [Décision de la squad] ou [À confirmer]', 'Rien de ce qui est dans le Nexus n\'est renvoyé à la Direction Revenu Annexe', 'Aucun chiffre sans source']);
+    if (c.filled.length < 5 || PLACEHOLDER.test(c.intentText.replace(/^---\n[\s\S]*?\n---\n?/, ''))) return S('intent-fill', 'Business Intent Spec : remplir les 5 champs', 'Specification Engineer',
+      'Complète la Business Intent Spec. Cherche d\'abord dans le Context Nexus (brief, règles métier RM-xx, decisions-deja-prises.md, contrats des squads) et cite chaque fichier. Ne renvoie à la Direction Revenu Annexe que son ambition chiffrée, l\'horizon et la priorité ; à la squad, son seuil engagé, l\'owner et ce qu\'elle ne fait pas. Ce que personne n\'a : « à confirmer », jamais inventé.',
+      'Le brief est volontairement flou : c\'est en allant poser les questions à la Direction Revenu Annexe (votre coach) que la squad obtient ses chiffres. L\'agent prépare les questions, la squad décide : l\'Intent reste humain.',
       ['Le critère de succès est chiffré (valeur, seuil, horizon) et son auteur est connu', 'Chaque affirmation est datée et sourcée', 'Ce que le brief ne dit pas est marqué « à confirmer », pas inventé'],
       { items: c.filled.length < 5 ? [`${c.filled.length} champ(s) sur 5 remplis`] : ['Il reste du texte du gabarit entre < >'] });
-    if (!c.ownerOk || c.intentFm.meta.status !== 'active') return S('intent-sign', 'Intent : relire, signer, passer en active', 'Specification Engineer',
+    if (!c.ownerOk || c.intentFm.meta.status !== 'active') return S('intent-sign', 'Business Intent Spec : relire et signer', 'Specification Engineer',
       `Dans le frontmatter : owner: <prénom.nom>, status: active, last-validated: ${c.config.date}`,
       'Une spec que personne n\'a relue n\'est pas une spec : un humain nommé s\'engage.',
       ['La squad a relu les 5 champs à voix haute', 'Un humain nommé est owner']);
@@ -375,6 +564,10 @@ function pickStep(c) {
     if (st && st.testFiles === 0) return S('tests', 'Des tests nommés d\'après vos critères', 'Agentic Workflow Orchestrator',
       'Écris un test par critère d\'acceptance de la spec, nommé d\'après lui, puis lance npm test.',
       'Un critère sans test n\'est qu\'une intention (ENG-04).', ['Chaque test cite le critère qu\'il couvre']);
+    if (st && st.testFiles > 0 && !st.marks.learned) return S('spec-learn', 'La spec apprend de l\'implémentation', 'Specification Engineer',
+      'Compare notre code à la spec : liste les écarts et les composants inventés ou adaptés, mets à jour la spec en conséquence (nouvelle version), puis dis-nous ce qui a changé.',
+      'Le TOM attend du Develop une spec à jour de ce que le code a appris : sinon, la spec ment et la prochaine équipe repart d\'une fausse description. Dites ensuite « spec à jour » à /coach.',
+      ['Chaque écart est soit corrigé dans le code, soit assumé dans la spec', 'La spec mise à jour est republiée']);
     if (c.cfg.pci && st && !signedOff(st.dir)) return S('sign', 'Signature humaine du code de débit', 'Decision Guarantor',
       'git commit -s -m "…"   # ajoute Signed-off-by: <prénom nom>',
       'Le code qui déclenche un débit est signé par un humain nommé avant d\'être fusionné (SEC-02, PCI-03). L\'agent ne signe jamais à votre place.',
@@ -391,6 +584,11 @@ function pickStep(c) {
       'npm run deploy   puis   npm run flag -- <nom> on --reason "…"',
       'Release ≠ Activation : déployer et activer sont deux décisions. La bascule est tracée (qui, quand, pourquoi) et réservée à un humain.',
       ['La ligne du journal porte un nom, une heure et un motif']);
+    const costTxt = ((c.runbookText.split('## Coût IA')[1] || '').split(/\n## /)[0] || '').trim();
+    if (!costTxt || costTxt.startsWith('<')) return S('cost', 'Relever le coût IA de l\'incrément', 'Agentic Workflow Orchestrator',
+      'Ajoute à la section « Coût IA » de notre runbook la consommation que je te donne, et ce qu\'elle a produit (tests verts, gates passées)',
+      'Le TOM attribue le coût IA à chaque incrément (G4) et le lit avec la qualité : un gain de vitesse sans sa qualité ni son coût ne prouve rien.',
+      ['Le chiffre vient de l\'affichage de Claude, pas d\'une estimation', 'Il est rapproché de la qualité obtenue']);
     const miss = c.publishMissing[0];
     if (miss) return S('kpi-publish', `Publier ${basename(miss, '.md')} en v1`, 'Specification Engineer',
       `Mettez à jour ${NX}/${miss} (version 1.0.0) puis publiez`, 'Ce que vous instrumentez est ce que les autres squads liront pour mesurer la valeur.', ['Chaque indicateur a sa définition et sa source']);
@@ -416,14 +614,21 @@ export function renderText(s, { welcome = false, config } = {}) {
   const L = [];
   const block = s.block ? ` · bloc en cours : ${s.block}` : '';
   L.push(`SQUAD : ${s.squad} (${s.label}) · volet : ${s.volet}${block}`);
-  L.push(`PHASE : ${s.phase}${s.nextGate ? ` · prochaine gate ${s.nextGate} « ${s.gates[s.nextGate].name} » à ${s.gates[s.nextGate].slot}` : ''}`);
+  const ph = PHASES[s.phase];
+  L.push(`PHASE : ${s.phase}${ph ? ` (phase ${ph.n} sur 4 du PDLC) · objectif : ${ph.goal} · on en sort avec ${ph.output}` : ''}${s.nextGate ? ` · prochaine gate ${s.nextGate} « ${s.gates[s.nextGate].name} » à ${s.gates[s.nextGate].slot}` : ''}`);
   L.push('');
   const st = s.step;
-  L.push(`PROCHAINE ÉTAPE : ${st.label}  [chapeau : ${st.hat}]`);
-  if (st.command) L.push(`  À taper ou à coller :\n${st.command.split('\n').map(l => '    ' + l).join('\n')}`);
+  L.push(`PROCHAINE ÉTAPE : ${st.label}`);
+  L.push(`  RESPONSABILITÉ EN JEU : ${st.hat}${st.hatDef ? ` (${st.hatDef})` : ''}${st.hatDoes ? ` · ${st.hatDoes}` : ''}`);
+  if (st.learn) L.push(`  CE QUE VOUS APPRENEZ : ${st.learn}`);
+  if (st.say) L.push(`  À TAPER DANS CLAUDE :\n${st.say.split('\n').map(l => '    ' + l).join('\n')}`);
+  if (st.humanDo) L.push(`  GESTE HUMAIN (l'agent ne le fait pas) : ${st.humanDo}`);
+  if (st.cue) L.push(`  REPÈRE OUTIL : ${st.cue}`);
+  if (st.command && st.command !== st.say) L.push(`  (Ce que Claude lancera : ${st.command.split('\n')[0]})`);
   if (st.followUp) L.push(`  Ensuite :\n    ${st.followUp}`);
   if (st.items && st.items.length) L.push('  Points à regarder :\n' + st.items.map(i => `    - ${i}`).join('\n'));
   L.push(`  Pourquoi : ${st.why}`);
+  if (st.checkpoint) L.push(`  POINT DE CONTRÔLE HUMAIN : ${st.checkpoint}`);
   if (st.human && st.human.length) L.push('  À relire par un humain :\n' + st.human.map(i => `    - ${i}`).join('\n'));
   L.push('');
   L.push('GATES :');
@@ -446,7 +651,15 @@ export function renderText(s, { welcome = false, config } = {}) {
   if (s.unpublished.length) { L.push(''); L.push(`NON PUBLIÉ dans le Nexus : ${s.unpublished.join(', ')}`); }
   if (welcome && config) {
     L.push('');
-    L.push('CHAPEAUX À RÉPARTIR (un par personne, ajustez au cadrage) :');
+    L.push('LE HACKATHON : Vélora Hôtels (fictif) veut vendre le late check-out en ligne. Quatre squads construisent chacune un volet ; aucune ne peut finir seule :');
+    for (const [id, q] of Object.entries(config.squads)) L.push(`  ${q.number} · ${q.label}${id === s.squad ? ' (vous)' : ''} : ${q.volet}`);
+    const pub = (s.own.contracts || []).map(c => c.path.split('/').pop().replace(/\.md$/, ''));
+    const reads = s.neighbors.filter(n => !n.mine).map(n => n.path.split('/').pop().replace(/\.md$/, ''));
+    if (pub.length) L.push(`VOTRE SQUAD PUBLIE : ${pub.join(', ')} · ELLE LIT : ${[...new Set(reads)].join(', ') || '—'}`);
+    L.push('LE PDLC : quatre phases (Discover, Design, Develop, Deploy), chacune close par une gate : un contrôle automatique, puis une décision humaine (le gate keeper).');
+    for (const [k, v] of Object.entries(PHASES)) L.push(`  ${v.n}. ${k} : ${v.goal} → ${v.output}`);
+    L.push('');
+    L.push('RESPONSABILITÉS À RÉPARTIR (TOM : pas de nouveaux postes, des responsabilités portées par vos profils ; la squad se met d\'accord à l\'oral, maintenant ; à six, deux responsabilités sont portées à deux) :');
     for (const [h, d] of Object.entries(config.hats)) L.push(`  ${h} : ${d}`);
     L.push('');
     L.push('JOURNÉE DE VOTRE SQUAD :');

@@ -79,8 +79,9 @@ function main() {
   } else {
     console.log(renderText(status, { welcome: args.mode === 'welcome', config }));
     if (args.mode === 'welcome') {
-      console.log('\nVÉRIFICATIONS DE L\'ENVIRONNEMENT :');
-      for (const c of environmentChecks({ nexus, starter, squad })) console.log(`  ${c.ok ? '[x]' : '[ ]'} ${c.id} : ${c.detail}`);
+      // Le participant n'a pas besoin de la liste : on ne montre que ce qui est à corriger.
+      const ko = environmentChecks({ nexus, starter, squad }).filter(c => !c.ok);
+      console.log(ko.length ? '\nENVIRONNEMENT À CORRIGER :\n' + ko.map(c => `  ${c.id} : ${c.detail}`).join('\n') : '\nENVIRONNEMENT : prêt (ne rien en dire au participant).');
     }
   }
 }

@@ -4,8 +4,8 @@ register: knowledge
 level: programme
 owner: direction-revenu-annexe
 status: active
-version: 1.0.0
-last-validated: 2026-10-21
+version: 1.1.0
+last-validated: 2026-10-25
 consumption-mode: context-injection
 ---
 
@@ -27,3 +27,9 @@ consumption-mode: context-injection
 
 Le brief est volontairement flou. Il appartient à chaque squad de le transformer en Business Intent Spec
 à 5 champs, datée et sourcée, avec un critère de succès **chiffré**.
+
+Trois sources pour le faire :
+
+- **Le Context Nexus** : les faits, les règles et les décisions déjà prises (`regles-metier.md`, `decisions-deja-prises.md`, les contrats des squads). L'agent les lit et les cite.
+- **La Direction Revenu Annexe** : son ambition chiffrée pour ce pilote, l'horizon de mesure et la priorité. Ce sont des décisions humaines qui ne sont écrites nulle part : allez les lui demander (pendant le hackathon, votre coach la joue).
+- **Votre squad** : le seuil de succès sur lequel vous vous engagez, l'owner de l'intention, ce que vous ne faites pas. L'agent propose, vous décidez et signez.

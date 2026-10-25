@@ -9,6 +9,7 @@
 // Options : --reset (efface l'historique des changements de contrat vu par l'écran) · --port 4000 · --host 127.0.0.1 (0.0.0.0 pour l'ouvrir aux autres postes, lecture seule) · --nexus <dossier>
 //           --pull <secondes> (git pull régulier) · --keeper (active les écritures, depuis ce poste uniquement) · --push
 //           --reset (efface l'historique des changements de contrat gardé par l'écran : à utiliser après une répétition)
+//           --squad <squad> --starter <dossier> --local <clone> : écran d'une squad (panneau « Votre squad », lu dans son starter et son clone local)
 
 import http from 'node:http';
 import { readFileSync, existsSync, writeFileSync, appendFileSync, mkdirSync, realpathSync } from 'node:fs';
@@ -31,6 +32,9 @@ function parseArgs(argv) {
     else if (k === '--keeper') a.keeper = true;
     else if (k === '--reset') a.reset = true;
     else if (k === '--push') a.push = true;
+    else if (k === '--squad') a.squad = argv[++i];
+    else if (k === '--starter') a.starter = argv[++i];
+    else if (k === '--local') a.local = argv[++i];
     else if (k === '--help' || k === '-h') a.help = true;
   }
   return a;
@@ -174,6 +178,21 @@ function buildState(ctx) {
     return { at, who, msg, squad: (msg.match(/^(squad-\d-[a-z]+)/) || [])[1] || null };
   }), []);
 
+  // Écran d'une squad : son état vu depuis son starter et son clone (ce que dit /coach), mis en cache 10 s.
+  let me = null;
+  if (ctx.squad && config.squads[ctx.squad]) {
+    if (!ctx.meCache || Date.now() - ctx.meCache.at > 10000) {
+      const m = safe(() => computeStatus({ nexus: ctx.local || nexus, starter: ctx.starter || null, squad: ctx.squad, config, now: nowDate }), null);
+      ctx.meCache = { at: Date.now(), me: m && {
+        id: ctx.squad, label: m.label, number: m.number, volet: m.volet, phase: m.phase, nextGate: m.nextGate,
+        gate: m.nextGate ? { id: m.nextGate, name: m.gates[m.nextGate].name, slot: m.gates[m.nextGate].slot, keeper: m.gates[m.nextGate].keeper, auto: m.gates[m.nextGate].auto, human: m.gates[m.nextGate].human } : null,
+        step: { label: m.step.label, hat: m.step.hat, say: m.step.say, humanDo: m.step.humanDo, why: m.step.why, human: m.step.human, learn: m.step.learn, cue: m.step.cue, hatDoes: m.step.hatDoes },
+        pinIssues: m.pinIssues.map(n => ({ path: n.path, pinned: n.pinned, current: n.current })), unpublished: m.unpublished,
+      } };
+    }
+    me = ctx.meCache.me;
+  }
+
   const day = config.date;
   const start = zonedMs(day, config.start, tz);
   const end = zonedMs(day, config.end, tz);
@@ -186,7 +205,7 @@ function buildState(ctx) {
       const a = artifacts.get(e.artifact);
       return [{ id: '01-regle-prix-v2', ...e, applied: !!a && cmpVersion(a.meta.version, e.newVersion) >= 0 }];
     }, []) : [],
-    gateNames: config.gates,
+    gateNames: config.gates, me,
   };
 }
 
@@ -225,7 +244,7 @@ function main() {
   const stateFile = join(tmpdir(), `nexus-board-${Buffer.from(nexus).toString('hex').slice(-16)}.json`);
   if (args.reset) safe(() => writeFileSync(stateFile, '{}'));
   const tracker = new Tracker(stateFile);
-  const ctx = { nexus, config, tracker, keeper: args.keeper, push: args.push };
+  const ctx = { nexus, config, tracker, keeper: args.keeper, push: args.push, squad: args.squad, starter: args.starter ? resolve(args.starter) : null, local: args.local ? resolve(args.local) : null };
   const html = () => readFileSync(join(TOOLS_DIR, 'board', 'index.html'), 'utf8');
 
   let pulling = false;
@@ -263,6 +282,11 @@ function main() {
     } catch (e) {
       json(res, 500, { error: e.message });
     }
+  });
+  server.on('error', e => {
+    // Un écran tourne déjà sur ce port (lancé par une autre session Claude, par exemple) : rien à faire.
+    if (e.code === 'EADDRINUSE') { console.log(`Un écran tourne déjà sur le port ${args.port}.`); process.exit(0); }
+    throw e;
   });
   server.listen(args.port, args.host, () => {
     console.log(`Écran commun : http://${args.host === '0.0.0.0' ? 'localhost' : args.host}:${args.port}${args.keeper ? '  (mode gate keeper : verdicts et événement)' : ''}`);
