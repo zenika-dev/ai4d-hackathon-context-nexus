@@ -186,7 +186,7 @@ function buildState(ctx) {
       ctx.meCache = { at: Date.now(), me: m && {
         id: ctx.squad, label: m.label, number: m.number, volet: m.volet, phase: m.phase, nextGate: m.nextGate, phaseInfo: PHASES[m.phase] || null,
         gate: m.nextGate ? { id: m.nextGate, name: m.gates[m.nextGate].name, slot: m.gates[m.nextGate].slot, keeper: m.gates[m.nextGate].keeper, accountable: ACCOUNTABLE[m.nextGate] || null, auto: m.gates[m.nextGate].auto, human: m.gates[m.nextGate].human } : null,
-        step: { id: m.step.id, items: m.step.items || null, label: m.step.label, hat: m.step.hat, say: m.step.say, humanDo: m.step.humanDo, why: m.step.why, human: m.step.human, learn: m.step.learn, cue: m.step.cue, hatDoes: m.step.hatDoes, hatDef: m.step.hatDef, accor: m.step.accor },
+        step: { id: m.step.id, items: m.step.items || null, label: m.step.label, hat: m.step.hat, say: m.step.say, humanDo: m.step.humanDo, why: m.step.why, human: m.step.human, learn: m.step.learn, cue: m.step.cue, hatDoes: m.step.hatDoes, hatDef: m.step.hatDef, accor: m.step.accor, files: m.step.files || null },
         pinIssues: m.pinIssues.map(n => ({ path: n.path, pinned: n.pinned, current: n.current })), unpublished: m.unpublished,
       } };
     }

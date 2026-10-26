@@ -87,6 +87,11 @@ body.keeper .g:hover{border-color:var(--ink)}
 .left{background:var(--sand-t);border:1px solid var(--sand);border-radius:10px;padding:8px 12px;margin:0 0 12px;font-size:14px}
 .left b{color:var(--sand)}
 .left ul{margin:4px 0 0;padding-left:18px}
+.files{border:1px solid var(--teal-b);border-radius:10px;padding:8px 12px;margin:0 0 12px;font-size:14px}
+.files b{color:var(--teal)}
+.files ul{margin:4px 0 0;padding-left:18px}
+.files code{font-size:13px;overflow-wrap:anywhere}
+.files .new{color:var(--muted);font-size:12px}
 .more{border-top:1px solid var(--teal-b);padding-top:8px;font-size:14px}
 .more summary{cursor:pointer;font-weight:600;color:var(--teal);list-style:none;display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
 .more summary::-webkit-details-marker{display:none}
@@ -283,6 +288,7 @@ function renderMe() {
     + (st.hat ? '<span class="chip"' + tipAttr(tipH('Responsabilité du TOM', (st.hatDef ? esc(st.hatDef) + '<br>' : '') + (st.hatDoes ? '<b>' + esc(st.hatDoes) + '</b><br>' : '') + 'Le TOM ne crée pas de nouveaux postes : il confie des responsabilités à des profils existants. On les apprend en les exerçant.')) + '>Responsabilité : ' + esc(st.hat) + '</span>' : '')
     + left
     + (st.say ? '<p class="lbl"><span class="tipline"' + tipAttr(tipH('À taper dans Claude', 'Une phrase en français, ou une commande Spec Kit (/speckit-…) : Claude fait le travail, vous relisez et vous décidez. Copiez-la dans le panneau Claude, à gauche de l\'éditeur.')) + '>À taper dans Claude</span></p><div class="say"><p>' + esc(st.say) + '</p><button type="button" id="saycp">Copier</button></div>' : '')
+    + (st.files && st.files.length ? '<div class="files"><b class="tipline"' + tipAttr(tipH('Où regarder', 'Les documents de cette étape, dans l\'explorateur de fichiers de l\'éditeur, à gauche. Le Context Nexus y est le dossier context-nexus/.')) + '>Où regarder :</b><ul>' + st.files.map(function (f) { return '<li>' + esc(f.label) + ' : <code>' + esc(f.path) + '</code>' + (f.exists === false ? ' <span class="new">(pas encore créé)</span>' : '') + '</li>'; }).join('') + '</ul></div>' : '')
     + (st.humanDo ? '<p class="hdo"><b class="tipline"' + tipAttr(tipH('Geste humain', 'Le TOM garde certaines décisions humaines, quel que soit le niveau de l\'IA : signer une intention, activer un flag, signer du code de débit. L\'agent ne les fait jamais à votre place : c\'est là que la responsabilité se joue.')) + '>Geste humain :</b> ' + esc(st.humanDo) + '</p>' : '')
     + (more ? '<details class="more" id="more"' + (moreOpen ? ' open' : '') + '><summary><b>Comprendre cette étape</b><span>ou tapez /coach dans Claude</span></summary>' + more + '</details>' : '')
     + '</div>' + renderGateCard(m, q);

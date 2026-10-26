@@ -267,13 +267,13 @@ export function computeStatus({ nexus, starter = null, squad, config, now = new 
   });
 
   const publishMissing = cfg.g4Publish.filter(p => { const a = artifacts.get(p); return !(a && cmpVersion(a.meta.version, '1.0.0') >= 0); });
-  const ctx = { config, squad, cfg, st, publishMissing, retours, block: block ? block.id : null, runbookText, fields, filled, intentText, intentFm, ownerOk, specs, contracts, runbook, flagsRows, pinIssues, ownStale, ownChanged, unpublished, nextGate, gates, milestones };
+  const ctx = { config, squad, cfg, st, nexus, starterDir: st ? st.dir : null, publishMissing, retours, block: block ? block.id : null, runbookText, fields, filled, intentText, intentFm, ownerOk, specs, contracts, runbook, flagsRows, pinIssues, ownStale, ownChanged, unpublished, nextGate, gates, milestones };
   const step = withSay(pickStep(ctx), ctx);
 
   return {
     squad, label: cfg.label, number: cfg.number, volet: cfg.volet, pci,
     now: now.toISOString(), agenda, block: block ? block.id : null,
-    phase, nextGate, gates, step, neighbors, pinIssues, ownStale, ownChanged, stale, unpublished, milestones,
+    phase, nextGate, gates, step, neighbors, pinIssues, ownStale, ownChanged, stale, unpublished, milestones, fileMap: fileMap(squad, nexus),
     starter: st ? { feature: st.feature, tasksDone: st.tasksDone, tasksTodo: st.tasksTodo, testFiles: st.testFiles, briefOk: !!(st.brief && /Task brief TB-/.test(st.brief)), welcomed: !!st.marks.welcomed } : null,
     own: { intent: intentFm ? { status: intentFm.meta.status, owner: intentFm.meta.owner } : null, specs: specs.map(s => ({ path: s.path, status: s.meta.status })), contracts: contracts.map(c => ({ path: c.path, version: c.meta.version, status: c.meta.status })) },
   };
@@ -324,13 +324,86 @@ function withSay(step, c) {
   const x = SAY[step.id];
   const base = x ? { ...step, say: x[0], humanDo: x[1] || null } : { ...step, say: step.command || '' };   // étapes Spec Kit : la commande /speckit-… est ce qu'on tape
   const L = LEARN[step.id] || [];
-  let cue = L[1] || null;
+  let cue = L[1] ? L[1].replace('teams › votre squad', `teams › ${c.squad}`) : null;
   if (step.id === 'retour') cue = step.verdict === 'GO'
     ? `Convention du TOM : le livrable d'une phase est l'entrée de la suivante. ${HANDOVER[step.gate] || ''} Après cette fiche, ${NEW_SESSION} : la nouvelle phase repart d'un contexte propre et du brief à jour, et coûte moins.`
     : `Sur ${SCREEN}, la gate est rouge avec son motif : c'est la prochaine chose à corriger.`;
   const a = ACCOR[step.id];
   const accor = typeof a === 'function' ? a(c) : a;
-  return { ...base, learn: L[0] || null, cue, hatDoes: HAT_DOES[step.id] || null, hatDef: hatDefinition(step.hat, c.config), checkpoint: CHECKPOINT[step.id] || null, accor: accor ? `Chez Accor, ${accor}` : null };
+  return { ...base, learn: L[0] || null, cue, hatDoes: HAT_DOES[step.id] || null, hatDef: hatDefinition(step.hat, c.config), checkpoint: CHECKPOINT[step.id] || null, accor: accor ? `Chez Accor, ${accor}` : null, files: filesFor(step, c) };
+}
+
+// Où sont les documents dont parle l'étape, tels que le participant les voit dans l'explorateur de fichiers, à gauche :
+// le Context Nexus y est le dossier context-nexus/ du starter (les commandes, elles, passent par ../context-nexus).
+// Le coach cite ces chemins pour que la squad aille ouvrir le document au lieu de le chercher.
+export const NEXUS_SHOWN = 'context-nexus';
+const KNOWLEDGE = 'programme/late-checkout/knowledge';
+
+function filesFor(step, c) {
+  const t = `teams/${c.squad}`;
+  const feat = `specs/${c.st && c.st.feature ? c.st.feature : '<numéro>-<nom>'}`;
+  const N = (label, p) => ({ label, path: `${NEXUS_SHOWN}/${p}`, exists: c.nexus ? existsSync(join(c.nexus, p)) : null });
+  const S = (label, p) => ({ label, path: p, exists: c.starterDir && !p.includes('<') ? existsSync(join(c.starterDir, p)) : null });
+  const intent = N('Business Intent Spec', `${t}/intent/business-intent.md`);
+  const brief = S('Brief assemblé (le contexte que lit l\'agent)', '.context/brief.md');
+  const spec = S('Spec', `${feat}/spec.md`);
+  const plan = S('Plan', `${feat}/plan.md`);
+  const tasks = S('Tâches', `${feat}/tasks.md`);
+  const published = c.specs.length ? c.specs.map(s => N('Spec publiée', s.path)) : [N('Spec publiée', `${t}/intent/specs/${c.squad}-001.md`)];
+  const contracts = c.contracts.map(x => N(`Contrat ${basename(x.path, '.md')}`, x.path));
+  const runbook = N('Runbook', `${t}/operations/runbook.md`);
+  const flags = [S('Flags du service', 'flags.json'), N('Journal des flags', `${t}/operations/flags-journal.md`)];
+  const code = [S('Code', 'src/'), S('Tests', 'test/')];
+  const retours = [N('Fiches de retour de la squad', `${t}/operations/retours.md`)];
+  const byGate = { G1: [intent], G2: [...published, ...contracts], G3: [spec, ...code], G4: [runbook, ...flags] };
+  const F = {
+    assemble: [brief],
+    'own-changed': [...c.ownChanged.map(o => N('Votre contrat, modifié', o.path)), spec],
+    react: [...c.pinIssues.map(n => N(`Document modifié (${basename(n.path, '.md')})`, n.path)), brief],
+    'intent-copy': [intent, N('Gabarit', 'gabarits/business-intent.md'), N('Décisions déjà prises', `${KNOWLEDGE}/decisions-deja-prises.md`)],
+    'intent-fill': [intent, N('Décisions déjà prises', `${KNOWLEDGE}/decisions-deja-prises.md`), N('Règles métier (RM-xx)', `${KNOWLEDGE}/regles-metier.md`)],
+    'intent-sign': [intent],
+    publish: c.unpublished.map(p => N('À publier', p)),
+    gate: byGate[c.nextGate] || [],
+    nogo: byGate[c.nextGate] || [],
+    constitution: [S('Constitution', '.specify/memory/constitution.md'), brief],
+    specify: [spec, intent],
+    clarify: [spec],
+    plan: [plan, spec],
+    tasks: [tasks],
+    analyze: [spec, plan, tasks],
+    'spec-publish': [spec, ...published, N('Gabarit d\'en-tête', 'gabarits/frontmatter-spec.md')],
+    'contract-v1': [...contracts, N('Checklist du contrat v1', 'gabarits/contrat-v1-checklist.md')],
+    implement: [tasks, ...code],
+    tests: [S('Tests', 'test/'), spec],
+    'spec-learn': [spec, ...published],
+    sign: [S('Code', 'src/')],
+    runbook: [runbook, N('Gabarit', 'gabarits/runtime-spec.md')],
+    flag: flags,
+    cost: [runbook],
+    'kpi-publish': c.publishMissing.slice(0, 1).map(p => N('Contrat à publier', p)),
+    retour: retours,
+    'retour-final': retours,
+    bonus: [intent],
+  };
+  return (F[step.id] || []).slice(0, 4);
+}
+
+// Les grands dossiers, pour l'accueil : où chercher quoi, une fois pour toutes.
+function fileMap(squad, nexus) {
+  const t = `${NEXUS_SHOWN}/teams/${squad}`;
+  let knowledge = [];
+  try { knowledge = readdirSync(join(nexus, KNOWLEDGE)).filter(n => n.endsWith('.md')).sort(); } catch { /* Nexus incomplet : on donne le dossier seul */ }
+  return [
+    ['Le Context Nexus, partagé par les 4 squads', `${NEXUS_SHOWN}/`],
+    ['Votre dossier dans le Nexus', `${t}/ (intent/, contracts/, operations/)`],
+    ['Les faits, les règles et les décisions déjà prises', `${NEXUS_SHOWN}/${KNOWLEDGE}/${knowledge.length ? ` (${knowledge.join(', ')})` : ''}`],
+    ['Les règles de l\'organisation (sécurité, ingénierie, accessibilité)', `${NEXUS_SHOWN}/org/`],
+    ['Les gabarits', `${NEXUS_SHOWN}/gabarits/`],
+    ['Votre Business Intent Spec, en Discover', `${t}/intent/business-intent.md`],
+    ['Votre spec, votre plan et vos tâches, en Design (Spec Kit)', 'specs/'],
+    ['Le brief que lit l\'agent', '.context/brief.md'],
+  ];
 }
 
 // Le pont avec le terrain : où l'étape vivrait chez Accor, d'après le TOM V1.0 (outils en place ou cible).
@@ -674,6 +747,7 @@ export function renderText(s, { welcome = false, config } = {}) {
   if (st.humanDo) L.push(`  GESTE HUMAIN (l'agent ne le fait pas) : ${st.humanDo}`);
   if (st.cue) L.push(`  REPÈRE OUTIL : ${st.cue}`);
   if (st.accor) L.push(`  SUR LE TERRAIN : ${st.accor}`);
+  if (st.files && st.files.length) L.push('  FICHIERS DE L\'ÉTAPE (explorateur de fichiers, à gauche) :\n' + st.files.map(f => `    - ${f.label} : ${f.path}${f.exists === false ? ' (pas encore créé)' : ''}`).join('\n'));
   if (st.command && st.command !== st.say) L.push(`  (Ce que Claude lancera : ${st.command.split('\n')[0]})`);
   if (st.followUp) L.push(`  Ensuite :\n    ${st.followUp}`);
   if (st.items && st.items.length) L.push('  Points à regarder :\n' + st.items.map(i => `    - ${i}`).join('\n'));
@@ -703,18 +777,32 @@ export function renderText(s, { welcome = false, config } = {}) {
     L.push('');
     L.push('LE HACKATHON : Vélora Hôtels (fictif) veut vendre le late check-out en ligne. Quatre squads construisent chacune un volet ; aucune ne peut finir seule :');
     for (const [id, q] of Object.entries(config.squads)) L.push(`  ${q.number} · ${q.label}${id === s.squad ? ' (vous)' : ''} : ${q.volet}`);
-    const pub = (s.own.contracts || []).map(c => c.path.split('/').pop().replace(/\.md$/, ''));
-    const reads = s.neighbors.filter(n => !n.mine).map(n => n.path.split('/').pop().replace(/\.md$/, ''));
-    if (pub.length) L.push(`VOTRE SQUAD PUBLIE : ${pub.join(', ')} · ELLE LIT : ${[...new Set(reads)].join(', ') || '—'}`);
+    // Chaque contrat avec son chemin dans l'explorateur : la squad doit pouvoir aller l'ouvrir.
+    const short = p => p.split('/').pop().replace(/\.md$/, '');
+    const whose = p => { const q = Object.entries(config.squads).find(([id]) => p.startsWith(`teams/${id}/`)); return q ? `squad ${q[1].label}` : p.startsWith('org/') ? 'règles de l\'organisation' : /\/knowledge\//.test(p) ? 'connaissance du programme' : 'contrat du programme'; };
+    const pub = s.own.contracts || [];
+    const reads = [...new Map(s.neighbors.filter(n => !n.mine).map(n => [n.path, n])).values()];
+    if (pub.length) {
+      L.push('VOTRE SQUAD PUBLIE :');
+      for (const c of pub) L.push(`  ${short(c.path)} (v${c.version}) : ${NEXUS_SHOWN}/${c.path}`);
+      L.push('ELLE LIT :');
+      for (const n of reads) L.push(`  ${short(n.path)} (${whose(n.path)}) : ${NEXUS_SHOWN}/${n.path}`);
+    }
+    L.push('');
+    L.push('OÙ SONT LES FICHIERS (explorateur de fichiers, à gauche ; le Context Nexus y est le dossier context-nexus/) :');
+    for (const [what, where] of s.fileMap) L.push(`  ${what} : ${where}`);
+    L.push('');
     L.push('LE PDLC : quatre phases (Discover, Design, Develop, Deploy), chacune close par une gate : un contrôle automatique, puis une décision humaine (le gate keeper).');
-    for (const [k, v] of Object.entries(PHASES)) L.push(`  ${v.n}. ${k} : ${v.goal} → ${v.output}`);
     L.push('');
     L.push('RESPONSABILITÉS À RÉPARTIR (TOM : pas de nouveaux postes, des responsabilités portées par vos profils ; la squad se met d\'accord à l\'oral, maintenant ; à six, deux responsabilités sont portées à deux) :');
     for (const [h, d] of Object.entries(config.hats)) L.push(`  ${h} : ${d}`);
     L.push('');
-    L.push('JOURNÉE DE VOTRE SQUAD :');
-    for (const b of s.agenda.filter(b => ['Discover', 'Design', 'Pause', 'Develop', 'Deploy', 'Bonus'].includes(b.id))) L.push(`  ${b.from}-${b.to} ${b.id}`);
-    L.push('  Gates : ' + Object.values(s.gates).map(g => `${g.id} ${g.slot}`).join(' · '));
+    L.push('JOURNÉE DE VOTRE SQUAD (horaire · phase · ce qu\'on en sort · gate) :');
+    for (const b of s.agenda.filter(b => ['Discover', 'Design', 'Pause', 'Develop', 'Deploy', 'Bonus'].includes(b.id))) {
+      const ph = PHASES[b.id];
+      const g = Object.values(s.gates).find(x => x.phase === b.id);
+      L.push(`  ${b.from}-${b.to} · ${ph ? `${ph.n}. ${b.id} (${ph.goal.charAt(0).toLowerCase() + ph.goal.slice(1)}) · ${ph.output}` : b.id}${g ? ` · gate ${g.id} « ${g.name} » à ${g.slot}` : ''}`);
+    }
   }
   return L.join('\n');
 }
