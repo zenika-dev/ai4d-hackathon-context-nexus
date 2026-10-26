@@ -7,7 +7,7 @@ status: active
 version: 1.0.0
 last-validated: 2026-10-26
 consumption-mode: context-injection
-consumes: [programme/late-checkout/knowledge/brief.md@1.1.0, programme/late-checkout/knowledge/regles-metier.md@1.0.0, programme/late-checkout/knowledge/decisions-deja-prises.md@1.0.0, programme/late-checkout/knowledge/hotels-pilotes.md@1.0.0, teams/squad-1-offre/contracts/offre-api.md@0.1.0, teams/squad-2-prix/contracts/regle-prix.md@0.1.0, teams/squad-2-prix/contracts/kpi.md@0.1.0, org/contracts/security.md@1.0.0]
+consumes: [programme/late-checkout/knowledge/brief.md@1.1.0, programme/late-checkout/knowledge/regles-metier.md@1.0.0, programme/late-checkout/knowledge/decisions-deja-prises.md@1.0.0, programme/late-checkout/knowledge/hotels-pilotes.md@1.0.0, teams/squad-1-offre/contracts/offre-api.md@0.1.0, teams/squad-2-prix/contracts/regle-prix.md@1.0.0, teams/squad-2-prix/contracts/kpi.md@0.1.0, org/contracts/security.md@1.0.0]
 ---
 
 # Business Intent Spec · Paiement du supplément late check-out · G1 Ready to Spec
@@ -30,7 +30,7 @@ consumes: [programme/late-checkout/knowledge/brief.md@1.1.0, programme/late-chec
 - **Réception des hôtels pilotes** : voit le supplément sur la note de chambre (`AT_HOTEL`), rembourse à la main si le remboursement en ligne est reporté en v2, et peut toujours accorder un LCO gratuit (RM-08). [Nexus : programme/late-checkout/knowledge/decisions-deja-prises.md ; programme/late-checkout/knowledge/regles-metier.md]
 - **Direction Revenu Annexe** : commanditaire, valide la règle de prix côté métier. [Nexus : programme/late-checkout/knowledge/decisions-deja-prises.md]
 - **PSP fictif PayVel** : seul à recevoir la carte ; nous ne recevons qu'un `paymentToken`. [Nexus : teams/squad-3-paiement/contracts/contraintes-pci.md (PCI-01)]
-- **Autres squads** : Offre (fournit `offerId` et `priceMinor` du créneau), Prix (bornes de prix), Expérience (appelle notre API et émet les événements d'achat). [Nexus : teams/squad-1-offre/contracts/offre-api.md@0.1.0 ; teams/squad-2-prix/contracts/regle-prix.md@0.1.0 ; teams/squad-3-paiement/contracts/paiement-api.md@0.1.0]
+- **Autres squads** : Offre (fournit `offerId` et `priceMinor` du créneau), Prix (bornes de prix), Expérience (appelle notre API et émet les événements d'achat). [Nexus : teams/squad-1-offre/contracts/offre-api.md@0.1.0 ; teams/squad-2-prix/contracts/regle-prix.md@1.0.0 ; teams/squad-3-paiement/contracts/paiement-api.md@0.1.0]
 - **Security guild** : garante du périmètre PCI-DSS (SEC-01 à SEC-05). [Nexus : org/contracts/security.md]
 
 ## 3. Critère de succès chiffré
@@ -46,7 +46,7 @@ consumes: [programme/late-checkout/knowledge/brief.md@1.1.0, programme/late-chec
 | Donnée | Source | Disponibilité |
 |---|---|---|
 | Prix du créneau (`options[].priceMinor`, centimes) pour recalculer le montant (SEC-05) | API d'offre, squad Offre [Nexus : teams/squad-1-offre/contracts/offre-api.md@0.1.0] | **disponible** en mock v0 (`src/mocks/`), v1 attendue avant G2 |
-| Bornes de prix (plancher, plafond) | squad Prix [Nexus : teams/squad-2-prix/contracts/regle-prix.md@0.1.0] | **disponible** en v0, v1 attendue avant 14:55 (jalon M1) |
+| Bornes de prix (plancher, plafond) | squad Prix [Nexus : teams/squad-2-prix/contracts/regle-prix.md@1.0.0] | **disponible** en v0, v1 attendue avant 14:55 (jalon M1) |
 | Réservations (statut, LCO déjà acheté, devise EUR) | données synthétiques du starter (`data/reservations.json`) | **disponible** |
 | Jeton de paiement PayVel | composant `VelaPaymentSheet`, squad Expérience [Nexus : teams/squad-3-paiement/contracts/contraintes-pci.md] | **à acquérir** : mock PayVel à fournir par notre squad (API-05) |
 | Taux d'échec réel des paiements | — | **bloquée** [À confirmer : personne aujourd'hui] |
@@ -73,5 +73,5 @@ Aucune solution de vente en ligne du late check-out n'existe chez Vélora ; l'an
 | Ce dont on a besoin | Squad | Contrat (version lue) | Question ouverte |
 |---|---|---|---|
 | `offerId`, `options[].priceMinor` et `expiresAt` pour recalculer le montant et refuser une offre expirée | squad-1-offre | `offre-api.md@0.1.0` | Comment interroger l'offre côté serveur au moment du paiement (même endpoint ou endpoint interne) ? |
-| Bornes de prix | squad-2-prix | `regle-prix.md@0.1.0` | Faut-il revérifier les bornes au paiement, ou l'offre suffit-elle ? |
+| Bornes de prix | squad-2-prix | `regle-prix.md@1.0.0` | Faut-il revérifier les bornes au paiement, ou l'offre suffit-elle ? |
 | `paymentToken` issu de `VelaPaymentSheet`, appel de notre API, événement `purchase_completed` | squad-4-experience | `evenements-achat.md@0.1.0`, `ecrans.md@0.1.0` | Qui émet `purchase_completed` : Expérience après notre `201`, ou nous ? |
