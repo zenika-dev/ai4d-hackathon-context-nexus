@@ -131,7 +131,7 @@ body.keeper .g:hover{border-color:var(--ink)}
 .oral ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
 .sq.mine{border:2px solid var(--teal);box-shadow:0 0 0 3px rgba(94,187,198,.15)}
 .sq.mine .blk::after{content:" · vous";color:var(--teal)}
-@media (max-width:1100px){.me{grid-template-columns:1fr}}
+@media (max-width:860px){.me{grid-template-columns:1fr}}
 .kbar{display:none;margin:0 0 14px;padding:10px 14px;border:2px dashed var(--sand);border-radius:12px;align-items:center;gap:14px;flex-wrap:wrap}
 body.keeper .kbar{display:flex}
 button.act{font:inherit;font-weight:700;border:0;border-radius:10px;padding:10px 18px;background:var(--sand);color:var(--bg);cursor:pointer}
@@ -158,6 +158,75 @@ dialog input[type=text],dialog textarea{width:100%;font:inherit;background:var(-
 .tipbox[hidden]{display:none}
 .tipbox b{color:var(--teal)}
 .tipbox .k{display:block;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--sand);margin-bottom:3px}
+details.oral summary{cursor:pointer;list-style:none}
+details.oral summary::-webkit-details-marker{display:none}
+details.oral summary p::before{content:"▸ ";color:var(--muted)} details.oral[open] summary p::before{content:"▾ ";}
+details.oral summary p span.n{font-weight:500;color:var(--muted)}
+/* Écran de squad : vu sur un portable (13 pouces), souvent dans l'aperçu de l'éditeur. Plus dense que l'écran de salle,
+   pour que l'étape, la gate et les quatre squads tiennent sans faire défiler. L'écran projeté garde ses grandes tailles. */
+body.squad{font-size:14px;padding:10px 14px 20px}
+body.squad .eyebrow{font-size:10.5px}
+body.squad .top{gap:12px;margin-bottom:8px}
+body.squad .top h1{font-size:18px}
+body.squad .clock{font-size:28px}
+body.squad .clock small{font-size:11px;margin-top:2px}
+body.squad .pill{font-size:12px;padding:3px 10px}
+body.squad .bar{height:4px;margin-top:6px}
+body.squad .banner{font-size:15px;padding:8px 14px;margin-bottom:10px;border-radius:12px}
+body.squad .card{padding:10px 12px;border-radius:12px}
+body.squad .card h2{font-size:11px;margin-bottom:6px}
+body.squad .me{gap:10px;margin-bottom:10px}
+body.squad .me .step{font-size:19px;margin-bottom:6px}
+body.squad .chip{font-size:11px;padding:2px 9px;margin-bottom:8px}
+body.squad .lbl{font-size:11px;margin-bottom:3px}
+body.squad .say{margin-bottom:8px;border-radius:10px}
+body.squad .say p{font-size:15px;padding:8px 12px}
+body.squad .say button{font-size:13px;padding:0 14px}
+body.squad .hdo{font-size:13px;margin-bottom:8px;padding:4px 10px}
+body.squad .left,body.squad .files{font-size:13px;margin-bottom:8px;padding:6px 10px}
+body.squad .left ul,body.squad .files ul{margin-top:2px}
+body.squad .files code{font-size:12px}
+body.squad .files .new{font-size:11px}
+body.squad .more{font-size:13px;padding-top:6px}
+body.squad .more summary span{font-size:12px}
+body.squad .more p{margin-top:6px}
+body.squad .ghead{margin-bottom:6px}
+body.squad .ghead .when{font-size:12px}
+body.squad .ghead .when b{font-size:15px}
+body.squad .score{gap:10px;margin-bottom:4px}
+body.squad .score .big{font-size:26px}
+body.squad .score .big small{font-size:14px}
+body.squad .score p{font-size:15px}
+body.squad .meter{gap:4px;margin-bottom:8px}
+body.squad .meter i{height:7px}
+body.squad .ready-msg,body.squad .nogo-msg{font-size:13px;padding:7px 10px;margin-bottom:8px}
+body.squad .crit{gap:3px;margin-bottom:8px}
+body.squad .crit li{gap:8px;padding:3px 8px;font-size:13px}
+body.squad .crit .ic{width:20px;height:20px;font-size:12px}
+body.squad .crit .tx small{font-size:11px;margin-top:1px}
+body.squad .crit .id{font-size:10px;padding-top:3px}
+body.squad .oral{font-size:12px}
+body.squad .oral p{margin-bottom:2px}
+body.squad .grid4{gap:8px;margin-bottom:10px}
+body.squad .sq{padding:10px 12px;gap:6px;border-radius:12px}
+body.squad .sqh{gap:8px}
+body.squad .sqh h3{font-size:16px}
+body.squad .sqh p{display:none}
+body.squad .num{width:26px;height:26px;font-size:13px}
+body.squad .blk{font-size:11px;padding:2px 9px}
+body.squad .gates{gap:4px}
+body.squad .g{font-size:13px;padding:4px 2px;border-radius:8px}
+body.squad .g small{font-size:10px}
+body.squad .nxt{font-size:12px}
+body.squad .meta{font-size:11px}
+body.squad .mid{gap:8px;margin-bottom:10px}
+body.squad .side{gap:8px}
+body.squad .leg{font-size:11px;gap:12px;margin-top:6px}
+body.squad .ms,body.squad .inc{font-size:13px;padding:6px 0}
+body.squad .ms small,body.squad .inc small{font-size:11px}
+body.squad .ms .ic{width:20px;height:20px;font-size:12px}
+body.squad .feed{font-size:12px}
+body.squad .feed li{padding:3px 0}
 </style>
 </head>
 <body>
@@ -198,7 +267,7 @@ dialog input[type=text],dialog textarea{width:100%;font:inherit;background:var(-
 <div class="toast" id="toast"></div>
 
 <script>
-var S = null, offset = 0, meCd = null, moreOpen = false;
+var S = null, offset = 0, meCd = null, moreOpen = false, oralOpen = false;
 // Ce que vérifie chaque critère automatique, et pourquoi (survol).
 var CRIT = {
   'G1-1': 'Le document existe dans le Nexus, dans le dossier de la squad : ce qui n\'est pas publié n\'existe pas pour le gate keeper.',
@@ -246,6 +315,7 @@ async function poll() {
     offset = S.serverMs - Date.now();
     document.body.classList.remove('off');
     document.body.classList.toggle('keeper', !!S.keeper);
+    document.body.classList.toggle('squad', !!S.me);
     render();
   } catch (e) { document.body.classList.add('off'); }
 }
@@ -297,6 +367,8 @@ function renderMe() {
   el.innerHTML = html;
   var d = $('more');
   if (d) d.addEventListener('toggle', function () { moreOpen = d.open; try { localStorage.setItem('moreOpen', moreOpen ? '1' : ''); } catch (e) {} });
+  var o = $('oral');
+  if (o) o.addEventListener('toggle', function () { if (!o.dataset.gate) oralOpen = o.open; });
   var b = $('saycp');
   if (b) b.onclick = function () { var ok = function () { b.textContent = 'Copié ✓'; setTimeout(function () { b.textContent = 'Copier'; }, 1400); }; if (navigator.clipboard) navigator.clipboard.writeText(st.say).then(ok, function () {}); };
 }
@@ -330,7 +402,8 @@ function renderGateCard(m, q) {
     + '<div class="score"><span class="big">' + ok + '<small> / ' + total + '</small></span><p>' + head + (unk && todo ? '<br><span class="meta">' + unk + ' à vérifier par le gate-check</span>' : '') + '</p></div>'
     + '<div class="meter">' + g.auto.map(function (c) { return '<i class="' + (c.ok ? 'ok' : (c.unknown ? 'unk' : '')) + '"></i>'; }).join('') + '</div>'
     + msg + '<ul class="crit">' + rows + '</ul>'
-    + '<div class="oral"><p><span class="tipline"' + tipAttr(tipH('Ce que juge l\'humain', 'La machine vérifie la forme ; le gate keeper juge le fond, à l\'oral, en cinq minutes. Votre Decision Guarantor présente le dossier et engage la squad. Manifesto : « une gate se passe sur preuve, jamais sur déclaration ».')) + '>À défendre à l\'oral devant le gate keeper ' + esc(g.keeper) + '</span></p><ul>' + g.human.map(function (h) { return '<li>' + esc(h) + '</li>'; }).join('') + '</ul></div></div>';
+    // L'oral se déplie de lui-même à l'étape de la gate ; avant, il reste replié pour alléger l'écran.
+    + '<details class="oral" id="oral"' + (isGate ? ' data-gate="1" open' : (oralOpen ? ' open' : '')) + '><summary><p><span class="tipline"' + tipAttr(tipH('Ce que juge l\'humain', 'La machine vérifie la forme ; le gate keeper juge le fond, à l\'oral, en cinq minutes. Votre Decision Guarantor présente le dossier et engage la squad. Manifesto : « une gate se passe sur preuve, jamais sur déclaration ».')) + '>À défendre à l\'oral devant le gate keeper ' + esc(g.keeper) + '</span> <span class="n">(' + g.human.length + ' points)</span></p></summary><ul>' + g.human.map(function (h) { return '<li>' + esc(h) + '</li>'; }).join('') + '</ul></details></div>';
 }
 
 function renderGraph() {
