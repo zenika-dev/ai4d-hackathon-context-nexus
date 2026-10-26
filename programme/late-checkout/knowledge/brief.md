@@ -31,5 +31,5 @@ Le brief est volontairement flou. Il appartient à chaque squad de le transforme
 Trois sources pour le faire :
 
 - **Le Context Nexus** : les faits, les règles et les décisions déjà prises (`regles-metier.md`, `decisions-deja-prises.md`, les contrats des squads). L'agent les lit et les cite.
-- **La Direction Revenu Annexe** : son ambition chiffrée pour ce pilote, l'horizon de mesure et la priorité. Ce sont des décisions humaines qui ne sont écrites nulle part : allez les lui demander (pendant le hackathon, votre coach la joue).
+- **La Direction Revenu Annexe** : son ambition chiffrée pour ce pilote, l'horizon de mesure et la priorité. Ce sont des décisions humaines qui ne sont écrites nulle part : allez les lui demander (pendant le hackathon, votre animateur AI4D la joue).
 - **Votre squad** : le seuil de succès sur lequel vous vous engagez, l'owner de l'intention, ce que vous ne faites pas. L'agent propose, vous décidez et signez.
