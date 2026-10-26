@@ -513,7 +513,7 @@ const LEARN = {
   'intent-copy': ['Discover : on définit le besoin et son succès chiffré avant toute solution. La Business Intent Spec rejoint le registre Purpose du Nexus : toutes les étapes suivantes s\'y réfèrent.',
     'Ouvrez le document depuis l\'explorateur de fichiers, à gauche : context-nexus › teams › votre squad › intent › business-intent.md. Chaque phrase porte l\'étiquette de sa source.'],
   'intent-fill': ['Discover : un chiffre sans source ne vaut rien en G1. Le Nexus donne les faits, la Direction Revenu Annexe son ambition, la squad son engagement.',
-    'Allez voir votre coach, qui joue la Direction Revenu Annexe, avec vos questions : elle ne répond qu\'à celles qu\'on lui pose.'],
+    'Allez voir votre animateur AI4D, qui joue la Direction Revenu Annexe, avec vos questions : elle ne répond qu\'à celles qu\'on lui pose.'],
   'intent-sign': ['TOM : cadrer l\'intention et fixer la priorité ne sont jamais délégués à l\'IA. Un humain nommé signe.',
     null],
   publish: ['Publier, c\'est rendre votre travail visible aux autres squads et au gate keeper. Manifesto du TOM : « ce qui n\'est pas écrit n\'existe pas ».',
@@ -625,11 +625,11 @@ function pickStep(c) {
   if (nextGate === 'G1') {
     if (!c.intentText) return S('intent-copy', 'Business Intent Spec : la rédiger avec Claude', 'Specification Engineer',
       `cp ${NX}/gabarits/business-intent.md ${NX}/teams/${squad}/intent/business-intent.md`,
-      'Un besoin écrit en 5 champs oblige à choisir : problème, utilisateurs, succès chiffré, données, priorité. Trois sources, chacune visible dans le document par une étiquette : le Context Nexus pour les faits, les règles et les décisions déjà prises (Claude les lit et les cite) ; la Direction Revenu Annexe pour son ambition chiffrée, l\'horizon et la priorité (votre coach la joue : allez la voir) ; votre squad pour ce qu\'elle choisit et signe.',
+      'Un besoin écrit en 5 champs oblige à choisir : problème, utilisateurs, succès chiffré, données, priorité. Trois sources, chacune visible dans le document par une étiquette : le Context Nexus pour les faits, les règles et les décisions déjà prises (Claude les lit et les cite) ; la Direction Revenu Annexe pour son ambition chiffrée, l\'horizon et la priorité (votre animateur AI4D la joue : allez la voir) ; votre squad pour ce qu\'elle choisit et signe.',
       ['Chaque phrase porte son étiquette : [Nexus : fichier], [Direction Revenu Annexe], [Décision de la squad] ou [À confirmer]', 'Rien de ce qui est dans le Nexus n\'est renvoyé à la Direction Revenu Annexe', 'Aucun chiffre sans source']);
     if (c.filled.length < 5 || PLACEHOLDER.test(c.intentText.replace(/^---\n[\s\S]*?\n---\n?/, ''))) return S('intent-fill', 'Business Intent Spec : remplir les 5 champs', 'Specification Engineer',
       'Complète la Business Intent Spec. Cherche d\'abord dans le Context Nexus (brief, règles métier RM-xx, decisions-deja-prises.md, contrats des squads) et cite chaque fichier. Ne renvoie à la Direction Revenu Annexe que son ambition chiffrée, l\'horizon et la priorité ; à la squad, son seuil engagé, l\'owner et ce qu\'elle ne fait pas. Ce que personne n\'a : « à confirmer », jamais inventé.',
-      'Le brief est volontairement flou : c\'est en allant poser les questions à la Direction Revenu Annexe (votre coach) que la squad obtient ses chiffres. L\'agent prépare les questions, la squad décide : l\'Intent reste humain.',
+      'Le brief est volontairement flou : c\'est en allant poser les questions à la Direction Revenu Annexe (jouée par votre animateur AI4D) que la squad obtient ses chiffres. L\'agent prépare les questions, la squad décide : l\'Intent reste humain.',
       ['Le critère de succès est chiffré (valeur, seuil, horizon) et son auteur est connu', 'Chaque affirmation est datée et sourcée', 'Ce que le brief ne dit pas est marqué « à confirmer », pas inventé'],
       { items: c.filled.length < 5 ? [`${c.filled.length} champ(s) sur 5 remplis`] : ['Il reste du texte du gabarit entre < >'] });
     if (!c.ownerOk || c.intentFm.meta.status !== 'active') return S('intent-sign', 'Business Intent Spec : relire et signer', 'Specification Engineer',
@@ -681,7 +681,7 @@ function pickStep(c) {
 
   if (nextGate === 'G3') {
     if (st && st.tasksTodo > 0) return S('implement', 'Implement : tâche par tâche', 'Agentic Workflow Orchestrator',
-      '/speckit-implement', `Une tâche, un test, un commit : il reste ${st.tasksTodo} tâche(s). Si un contrat d'une autre squad change, votre coach vous le dira, et ce tableau aussi.`,
+      '/speckit-implement', `Une tâche, un test, un commit : il reste ${st.tasksTodo} tâche(s). Si un contrat d'une autre squad change, votre animateur AI4D l'annoncera, et /coach comme ce tableau le signaleront.`,
       ['Chaque critère d\'acceptance a un test nommé qui le référence (ENG-04)', 'Les tests sont verts avant chaque commit'], { remaining: st.tasksTodo });
     if (st && st.testFiles === 0) return S('tests', 'Des tests nommés d\'après vos critères', 'Agentic Workflow Orchestrator',
       'Écris un test par critère d\'acceptance de la spec, nommé d\'après lui, puis lance npm test.',

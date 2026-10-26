@@ -17,6 +17,8 @@ Accueille la squad en français, en vouvoyant, avec chaleur et sans emphase. Les
 
 **La mise en page compte autant que le contenu** : c'est le premier message que la squad lit. Reproduis exactement la structure ci-dessous : un titre `##`, des sections `###`, **une ligne vide avant et après chaque titre, chaque paragraphe et chaque liste**, des listes à puces plutôt que des paragraphes, au plus trois phrases par paragraphe. Pas de tableau (le panneau Claude est étroit). Remplace chaque `<…>` par ce que dit l'état ; ne recopie pas les consignes entre parenthèses.
 
+**Deux « coach » à ne pas confondre** : « coach » désigne uniquement la commande `/coach` dans Claude. La personne de l'équipe programme AI4D assise avec la squad s'appelle **votre animateur AI4D**, jamais « votre coach ».
+
 **Chaque fichier ou dossier cité porte son chemin**, entre accents graves, tel qu'il apparaît dans l'explorateur de fichiers, à gauche : `context-nexus/…` pour le Context Nexus (jamais `../context-nexus`), `specs/…` ou `.context/brief.md` pour le starter. Reprends les chemins de l'état (« VOTRE SQUAD PUBLIE », « ELLE LIT », « OÙ SONT LES FICHIERS ») ; n'en invente aucun.
 
 ---
@@ -53,7 +55,7 @@ Le TOM ne crée pas de nouveaux postes : il confie des responsabilités à vos p
 - **Agentic Workflow Orchestrator** : <quelques mots>
 - **Decision Guarantor** : <quelques mots>
 
-**Mettez-vous d'accord maintenant, à l'oral,** sur qui porte laquelle (à six, deux sont portées à deux). À chaque étape, le coach vous dira laquelle est en jeu et ce qu'elle fait.
+**Mettez-vous d'accord maintenant, à l'oral,** sur qui porte laquelle (à six, deux sont portées à deux). À chaque étape, `/coach` vous dira laquelle est en jeu et ce qu'elle fait.
 
 ### Où sont les fichiers
 
@@ -71,15 +73,16 @@ Phase 1 sur 4 : comprendre le besoin et le chiffrer, avant toute solution. Vous 
 Où trouver les réponses (c'est ce que le Discover fait pratiquer) :
 
 - **Le Context Nexus** : les faits, les règles et les décisions déjà prises, dont `context-nexus/programme/late-checkout/knowledge/decisions-deja-prises.md`. Claude les lit et les cite.
-- **La Direction Revenu Annexe**, cliente du projet, jouée par votre coach : son ambition chiffrée, l'horizon, la priorité. Ce sont ses décisions, écrites nulle part : allez les lui demander, elle ne répond qu'aux questions posées.
+- **La Direction Revenu Annexe**, cliente du projet, jouée par votre animateur AI4D : son ambition chiffrée, l'horizon, la priorité. Ce sont ses décisions, écrites nulle part : allez les lui demander, elle ne répond qu'aux questions posées.
 - **Votre squad** : le seuil sur lequel vous vous engagez, l'owner, ce que vous ne faites pas. Vous décidez et signez.
 
 ### Vos outils
 
-- **/coach**, chaque fois que vous vous demandez quoi faire : où vous en êtes, le fichier à ouvrir, la prochaine phrase à taper.
+- **Votre animateur AI4D**, la personne de l'équipe programme AI4D assise avec votre squad : il anime votre table, joue la Direction Revenu Annexe et vous débloque si besoin.
+- **/coach**, le coach dans Claude, chaque fois que vous vous demandez quoi faire : où vous en êtes, le fichier à ouvrir, la prochaine phrase à taper.
 - **L'écran de votre squad**, l'onglet ouvert à côté de l'éditeur (sinon onglet **Ports**, ligne 4000, icône globe) : votre prochaine étape, vos critères de gate, l'état des contrats de toutes les squads.
-- **Une nouvelle session Claude** à chaque nouvelle phase, après chaque gate : l'agent repart d'un contexte propre et du brief à jour, et la session coûte moins. Le coach vous dira quand.
-- **La fiche de retour**, après chaque gate (20 secondes) et en fin de session : vos retours font évoluer le TOM. Le coach vous la demandera.
+- **Une nouvelle session Claude** à chaque nouvelle phase, après chaque gate : l'agent repart d'un contexte propre et du brief à jour, et la session coûte moins. `/coach` vous dira quand.
+- **La fiche de retour**, après chaque gate (20 secondes) et en fin de session : vos retours font évoluer le TOM. `/coach` vous la demandera.
 
 ---
 
