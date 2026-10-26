@@ -19,6 +19,7 @@ try {
   } catch { /* l'écran est un plus, jamais un blocage */ }
   console.log(`[Hackathon] ${line}.`);
   console.log('L\'écran de la squad tourne sur le port 4000 : dans un Codespace, onglet Ports, ligne 4000, icône globe ; sur un poste, http://localhost:4000. Mentionne-le si l\'utilisateur demande où voir l\'avancement.');
+  console.log('Quand tu cites un document, donne son chemin tel que la squad le voit dans l\'explorateur de fichiers : le Context Nexus y est le dossier `context-nexus/` (écris `context-nexus/teams/…`, jamais `../context-nexus/…`), Spec Kit écrit dans `specs/<numéro>-<nom>/`, le brief est `.context/brief.md`.');
   console.log('Pour publier dans le Context Nexus, préfère `node ../context-nexus/tools/publish.mjs -m "<message>"` à la suite git manuelle : il montre ce qui part, ne prend que teams/<squad>/ et réessaie si quelqu\'un publie au même moment.');
   console.log(welcomed
     ? 'Si l\'utilisateur demande où il en est ou quoi faire ensuite, propose /coach.'
