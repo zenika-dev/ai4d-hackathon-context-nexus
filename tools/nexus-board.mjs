@@ -172,8 +172,9 @@ function buildState(ctx) {
     return { ...m, current: a ? a.meta.version : null, done, late: !done && nowMin >= hm(m.due) };
   });
 
-  // Flux des publications
-  const feed = safe(() => git(nexus, ['log', '-n', '30', '--format=%cI%x1f%an%x1f%s', '--', 'teams', 'programme', 'org']).trim().split('\n').filter(Boolean).map(l => {
+  // Flux des publications : seulement depuis le début du hackathon (les répétitions d'avant restent hors de l'écran).
+  const since = new Date(zonedMs(config.date, config.start, tz)).toISOString();
+  const feed = safe(() => git(nexus, ['log', '-n', '30', `--since=${since}`, '--format=%cI%x1f%an%x1f%s', '--', 'teams', 'programme', 'org']).trim().split('\n').filter(Boolean).map(l => {
     const [at, who, msg] = l.split('\x1f');
     return { at, who, msg, squad: (msg.match(/^(squad-\d-[a-z]+)/) || [])[1] || null };
   }), []);
